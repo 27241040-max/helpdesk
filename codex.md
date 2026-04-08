@@ -9,6 +9,7 @@
 - 数据库：PostgreSQL。
 - 前端路径别名：`client` 内已配置 `@/* -> src/*`。
 - 前端数据请求默认约定：优先使用 `axios` 作为 HTTP 客户端，优先使用 `@tanstack/react-query` 管理服务端状态；除非有明确理由，否则不要为常规数据获取继续新增裸 `fetch` 或手写 `useEffect + useState` 请求逻辑。
+- 前端组件/单元测试当前使用 `Vitest + React Testing Library + jsdom + jest-dom`，测试配置在 `client/vite.config.ts`。
 
 ## 2. 认证与权限
 - 认证方案使用 Better Auth。
@@ -43,6 +44,7 @@
 
 ## 6. 常用命令
 - 前端构建：在 `client` 下运行 `npm run build`。
+- 前端组件/单元测试：在 `client` 下运行 `npm run test` 或 `npm run test:components`。
 - 服务端生成 Better Auth schema：在 `server` 下运行 `npm run auth:generate`。
 - Prisma Client 生成：在 `server` 下运行 `npm run prisma:generate`。
 - Prisma Seed：在 `server` 下运行 `npm run prisma:seed`。
