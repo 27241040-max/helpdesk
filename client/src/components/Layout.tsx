@@ -33,9 +33,12 @@ export function Layout({ displayName, isAdmin }: LayoutProps) {
       <div className="flex min-h-screen flex-col gap-3 p-3 md:p-4">
         <header className="flex flex-col gap-2 rounded-2xl border border-border bg-card px-4 py-2 shadow-sm md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">
+            <NavLink
+              className="text-xl font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80 md:text-2xl"
+              to="/"
+            >
               Helpdesk
-            </h1>
+            </NavLink>
             {isAdmin ? (
               <nav aria-label="Primary" className="flex items-center gap-2">
                 <NavLink

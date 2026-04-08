@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { apiClient } from "../lib/api-client";
 
@@ -38,6 +39,46 @@ function formatDate(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function getRoleBadgeClassName(role: UserListItem["role"]) {
+  if (role === "admin") {
+    return "border-transparent bg-primary text-primary-foreground";
+  }
+
+  return "border-border bg-secondary text-secondary-foreground";
+}
+
+function UsersTableSkeleton() {
+  return (
+    <div className="px-4 pb-4 md:px-6">
+      <div className="rounded-xl border border-border/70">
+        <div className="grid grid-cols-5 gap-4 border-b border-border bg-muted/20 px-4 py-3">
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="grid grid-cols-5 items-center gap-4 border-b border-border/70 px-4 py-4 last:border-b-0"
+          >
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function UsersPage() {
@@ -79,9 +120,7 @@ export function UsersPage() {
         </CardContent>
 
         {isPending ? (
-          <CardContent className="pb-6 pt-2 text-sm text-muted-foreground">
-            正在加载用户列表...
-          </CardContent>
+          <UsersTableSkeleton />
         ) : isError ? (
           <CardContent className="pb-6 pt-2 text-sm text-destructive">
             用户列表加载失败，请稍后再试。
@@ -110,7 +149,10 @@ export function UsersPage() {
                       <span className="mt-1 block text-sm text-muted-foreground">{user.email}</span>
                     </TableCell>
                     <TableCell className="align-top">
-                      <Badge className="uppercase tracking-[0.12em]" variant="outline">
+                      <Badge
+                        className={`uppercase tracking-[0.12em] ${getRoleBadgeClassName(user.role)}`}
+                        variant="outline"
+                      >
                         {user.role}
                       </Badge>
                     </TableCell>
