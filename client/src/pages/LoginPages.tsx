@@ -1,41 +1,71 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Navigate, useNavigate } from "react-router";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { authClient } from "../lib/auth-client";
 
+const loginSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "请输入邮箱")
+    .email("请输入有效的邮箱地址"),
+  password: z
+    .string()
+    .min(1, "请输入密码")
+    .min(6, "密码至少需要 6 个字符"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
+function getLoginErrorMessage(error: { message?: string; status?: number } | null) {
+  if (!error) {
+    return "登录失败，请稍后再试。";
+  }
+
+  const normalizedMessage = error.message?.trim().toLowerCase();
+
+  if (error.status === 401 || normalizedMessage === "invalid email or password") {
+    return "邮箱或密码错误。";
+  }
+
+  return error.message || "登录失败，请稍后再试。";
+}
+
 export function LoginPages() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { data: session, isPending } = authClient.useSession();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
   if (!isPending && session) {
     return <Navigate to="/" replace />;
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage("");
-
+  const onSubmit = async ({ email, password }: LoginFormValues) => {
+    clearErrors("root");
     const { error } = await authClient.signIn.email({
       email,
       password,
     });
 
-    setIsSubmitting(false);
-
     if (error) {
-      setErrorMessage(error.message || "登录失败，请检查邮箱和密码。");
+      setError("root", {
+        type: "server",
+        message: getLoginErrorMessage(error),
+      });
       return;
     }
 
@@ -56,57 +86,43 @@ export function LoginPages() {
   return (
     <main className="shell shell--centered">
       <section className="auth-layout">
-        <div className="auth-copy">
-          <p className="eyebrow">Secure Access</p>
-          <h1>登录 AI 工单后台</h1>
-          <p className="auth-copy__text">
-            使用已有账号进入受保护主页。系统会在成功登录后直接跳转到首页，并在导航栏展示当前用户名。
-          </p>
-          <div className="auth-copy__hint">
-            <span className="auth-copy__hint-title">受保护行为</span>
-            <span>未登录访问主页时会自动跳转到登录页。</span>
-          </div>
-        </div>
-
         <div className="panel auth-card">
-          <form className="auth-form" onSubmit={handleSubmit}>
+          <form className="auth-form" noValidate onSubmit={handleSubmit(onSubmit)}>
             <div className="auth-form__header">
-              <p className="eyebrow">Welcome Back</p>
+              <p className="eyebrow">Secure Access</p>
               <h2>邮箱密码登录</h2>
-              <p className="muted">
-                当前路径：<code>{location.pathname}</code>
-              </p>
+              <p className="muted">使用已有账号登录后将直接跳转到主页。</p>
             </div>
 
             <label className="field">
               <span>邮箱</span>
               <input
                 autoComplete="email"
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                }}
+                className={errors.email ? "field-input field-input--error" : "field-input"}
                 placeholder="admin@example.com"
-                required
                 type="email"
-                value={email}
+                {...register("email")}
               />
             </label>
+            {errors.email ? <p className="field-error">{errors.email.message}</p> : null}
 
             <label className="field">
               <span>密码</span>
               <input
                 autoComplete="current-password"
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                }}
+                className={
+                  errors.password ? "field-input field-input--error" : "field-input"
+                }
                 placeholder="请输入密码"
-                required
                 type="password"
-                value={password}
+                {...register("password")}
               />
             </label>
+            {errors.password ? (
+              <p className="field-error">{errors.password.message}</p>
+            ) : null}
 
-            {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
+            {errors.root?.message ? <p className="form-error">{errors.root.message}</p> : null}
 
             <button className="button" disabled={isSubmitting} type="submit">
               {isSubmitting ? "登录中..." : "登录并进入主页"}

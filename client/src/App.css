@@ -161,46 +161,13 @@ a {
 }
 
 .auth-layout {
-  width: min(1120px, 100%);
+  width: min(440px, 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 440px);
-  gap: 28px;
+  grid-template-columns: minmax(320px, 440px);
   align-items: stretch;
+  justify-content: center;
 }
 
-.auth-copy {
-  padding: 48px;
-  border-radius: 32px;
-  background: var(--bg-accent);
-  color: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--shadow-lg);
-}
-
-.auth-copy h1 {
-  margin: 10px 0 0;
-  color: #fff;
-  font-size: clamp(2.4rem, 4vw, 4rem);
-  line-height: 0.98;
-}
-
-.auth-copy__text {
-  margin-top: 24px;
-  max-width: 28rem;
-  font-size: 1.05rem;
-  line-height: 1.7;
-}
-
-.auth-copy__hint {
-  margin-top: 28px;
-  display: grid;
-  gap: 8px;
-  padding: 18px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.auth-copy__hint-title,
 .eyebrow,
 .user-menu__label {
   font-size: 0.78rem;
@@ -213,13 +180,10 @@ a {
   color: var(--text-muted);
 }
 
-.auth-copy .eyebrow {
-  color: rgba(255, 255, 255, 0.72);
-}
-
 .auth-card {
   display: flex;
   align-items: center;
+  width: min(100%, 440px);
 }
 
 .auth-form {
@@ -244,7 +208,7 @@ a {
   font-weight: 600;
 }
 
-.field input {
+.field-input {
   width: 100%;
   padding: 14px 16px;
   border-radius: 16px;
@@ -258,11 +222,27 @@ a {
     transform 120ms ease;
 }
 
-.field input:focus {
+.field-input:focus {
   outline: none;
   border-color: rgba(15, 61, 62, 0.4);
   box-shadow: 0 0 0 4px rgba(30, 111, 92, 0.12);
   transform: translateY(-1px);
+}
+
+.field-input--error {
+  border-color: rgba(176, 59, 36, 0.7);
+  box-shadow: 0 0 0 1px rgba(176, 59, 36, 0.08);
+}
+
+.field-input--error:focus {
+  border-color: rgba(176, 59, 36, 0.9);
+  box-shadow: 0 0 0 4px rgba(176, 59, 36, 0.16);
+}
+
+.field-error {
+  margin: -6px 0 0;
+  color: var(--error-text);
+  font-size: 0.92rem;
 }
 
 .button {
@@ -360,14 +340,9 @@ code {
     padding: 20px;
   }
 
-  .auth-copy,
   .panel,
   .hero-card,
   .status-card {
     padding: 24px;
-  }
-
-  .auth-copy h1 {
-    font-size: 2.4rem;
   }
 }
