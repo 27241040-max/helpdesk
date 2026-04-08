@@ -55,6 +55,7 @@ export function ProtectionRount() {
   }
 
   const displayName = session.user.name?.trim() || session.user.email;
+  const isAdmin = (session.user as { role?: string }).role === "admin";
 
-  return <Layout displayName={displayName} />;
+  return <Layout displayName={displayName} isAdmin={isAdmin} />;
 }

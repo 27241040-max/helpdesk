@@ -1,8 +1,10 @@
 import { Navigate, Route, Routes } from "react-router";
 
+import { AdminProtectionRoute } from "./components/AdminProtectionRoute";
 import { ProtectionRount } from "./components/ProtectionRount";
 import { Homepage } from "./pages/Homepage";
 import { LoginPages } from "./pages/LoginPages";
+import { UsersPage } from "./pages/UsersPage";
 
 function App() {
   return (
@@ -10,6 +12,9 @@ function App() {
       <Route path="/login" element={<LoginPages />} />
       <Route path="/" element={<ProtectionRount />}>
         <Route index element={<Homepage />} />
+        <Route path="users" element={<AdminProtectionRoute />}>
+          <Route index element={<UsersPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
