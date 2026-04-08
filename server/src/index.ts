@@ -7,7 +7,9 @@ import { toNodeHandler } from 'better-auth/node';
 
 import { auth } from './auth';
 import { isAllowedOrigin } from './config';
+import { requireAdmin } from './middleware/require-admin';
 import { requireAuth } from './middleware/require-auth';
+import { prisma } from './prisma';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -34,6 +36,26 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
+});
+
+app.get('/api/users', requireAuth, requireAdmin, async (req, res) => {
+  const users = await prisma.user.findMany({
+    orderBy: [
+      { role: "asc" },
+      { createdAt: "desc" },
+    ],
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      emailVerified: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  res.json({ users });
 });
 
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {

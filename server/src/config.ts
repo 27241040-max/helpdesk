@@ -12,9 +12,32 @@ function normalizeOrigins(rawOrigins: string | undefined): string[] {
     .filter(Boolean);
 }
 
-export const trustedOrigins = Array.from(
-  new Set(normalizeOrigins(process.env.CLIENT_ORIGIN)),
-);
+function expandDevelopmentOrigins(origins: string[]): string[] {
+  const expanded = new Set(origins);
+
+  for (const origin of origins) {
+    try {
+      const url = new URL(origin);
+
+      if (url.protocol !== "http:" || !LOCALHOST_HOSTS.has(url.hostname)) {
+        continue;
+      }
+
+      expanded.add(`http://localhost${url.port ? `:${url.port}` : ""}`);
+      expanded.add(`http://127.0.0.1${url.port ? `:${url.port}` : ""}`);
+    } catch {
+      continue;
+    }
+  }
+
+  return Array.from(expanded);
+}
+
+const configuredOrigins = normalizeOrigins(process.env.CLIENT_ORIGIN);
+
+export const trustedOrigins = isDevelopment
+  ? expandDevelopmentOrigins(configuredOrigins)
+  : configuredOrigins;
 
 export function isAllowedOrigin(origin: string | undefined): boolean {
   if (!origin) {
