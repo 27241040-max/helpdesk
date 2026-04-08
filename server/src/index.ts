@@ -1,17 +1,38 @@
+import "dotenv/config";
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { toNodeHandler } from 'better-auth/node';
 
-dotenv.config();
+import { auth } from './auth';
+import { isAllowedOrigin } from './config';
+import { requireAuth } from './middleware/require-auth';
 
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin ?? 'unknown'} is not allowed by CORS`));
+    },
+    credentials: true,
+  }),
+);
+app.all('/api/auth/*splat', toNodeHandler(auth));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'ticket-management-system' });
+});
+
+app.get('/api/me', requireAuth, (req, res) => {
+  res.json({ user: req.user, session: req.session });
 });
 
 app.listen(port, () => {

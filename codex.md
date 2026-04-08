@@ -1,6 +1,6 @@
-# Antigravity 项目记忆文件 (Project Context Memory)
+# codex 项目记忆文件 (Project Context Memory)
 
-这是为 Antigravity AI 助手的后续会话所保留的专属记忆与行为准则设置文件。在每次启动或深度开发时，应参考此处的信息。
+这是为 codex AI 助手的后续会话所保留的专属记忆与行为准则设置文件。在每次启动或深度开发时，应参考此处的信息。
 
 ## 1. 核心指令：始终获取最新文档 (Context7)
 为了防止 AI 的历史数据幻觉或生成了旧版废弃框架的代码，本项目规定：
