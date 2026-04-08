@@ -1,4 +1,5 @@
 const LOCALHOST_HOSTS = new Set(["localhost", "127.0.0.1"]);
+const isDevelopment = process.env.NODE_ENV !== "production";
 
 function normalizeOrigins(rawOrigins: string | undefined): string[] {
   if (!rawOrigins) {
@@ -26,7 +27,7 @@ export function isAllowedOrigin(origin: string | undefined): boolean {
 
   try {
     const { protocol, hostname } = new URL(origin);
-    return protocol === "http:" && LOCALHOST_HOSTS.has(hostname);
+    return isDevelopment && protocol === "http:" && LOCALHOST_HOSTS.has(hostname);
   } catch {
     return false;
   }

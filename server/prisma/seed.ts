@@ -1,5 +1,9 @@
 import "dotenv/config";
 
+import { randomUUID } from "node:crypto";
+
+import { hashPassword } from "better-auth/crypto";
+
 import { UserRole } from "../src/generated/prisma";
 
 import { auth } from "../src/auth";
@@ -21,20 +25,54 @@ async function main() {
     where: {
       email,
     },
-    select: {
-      id: true,
-      email: true,
-      role: true,
+    include: {
+      accounts: true,
     },
   });
 
   if (existingUser) {
+    const passwordHash = await hashPassword(password);
+    const credentialAccount = existingUser.accounts.find(
+      (account) => account.providerId === "credential",
+    );
+
+    if (credentialAccount) {
+      await prisma.account.update({
+        where: {
+          id: credentialAccount.id,
+        },
+        data: {
+          password: passwordHash,
+        },
+      });
+    } else {
+      await prisma.account.create({
+        data: {
+          id: randomUUID(),
+          accountId: existingUser.id,
+          providerId: "credential",
+          userId: existingUser.id,
+          password: passwordHash,
+        },
+      });
+    }
+
+    await prisma.user.update({
+      where: {
+        id: existingUser.id,
+      },
+      data: {
+        name,
+        role: UserRole.admin,
+      },
+    });
+
     console.log(
       JSON.stringify({
-        seeded: false,
-        message: "A user with the same email already exists.",
+        seeded: true,
+        message: "Existing admin user synchronized.",
         email: existingUser.email,
-        role: existingUser.role,
+        role: UserRole.admin,
         userId: existingUser.id,
       }),
     );

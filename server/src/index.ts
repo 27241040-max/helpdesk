@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import type { ErrorRequestHandler } from "express";
 import express from 'express';
 import cors from 'cors';
 import { toNodeHandler } from 'better-auth/node';
@@ -32,8 +33,27 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/api/me', requireAuth, (req, res) => {
-  res.json({ user: req.user, session: req.session });
+  res.json({ user: req.user });
 });
+
+const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+
+  const isCorsError = error instanceof Error && error.message.includes("is not allowed by CORS");
+  const status = isCorsError ? 403 : 500;
+  const message = isCorsError ? "Origin is not allowed" : "Internal server error";
+
+  if (status === 500) {
+    console.error(error);
+  }
+
+  res.status(status).json({ error: message });
+};
+
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

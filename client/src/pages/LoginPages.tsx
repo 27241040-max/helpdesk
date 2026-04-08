@@ -50,7 +50,7 @@ function getLoginErrorMessage(error: { message?: string; status?: number } | nul
     return "邮箱或密码错误。";
   }
 
-  return error.message || "登录失败，请稍后再试。";
+  return "登录失败，请稍后再试。";
 }
 
 function LoginStatusCard() {

@@ -3,6 +3,10 @@ import { Navigate } from "react-router";
 import { authClient } from "../lib/auth-client";
 import { Layout } from "./Layout";
 
+function getSessionErrorMessage() {
+  return "会话读取失败，请重新登录或稍后再试。";
+}
+
 export function ProtectionRount() {
   const { data: session, isPending, error } = authClient.useSession();
 
@@ -43,7 +47,7 @@ export function ProtectionRount() {
             <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-900">
               会话读取失败
             </h1>
-            <p className="mt-3 text-slate-500">{error.message}</p>
+            <p className="mt-3 text-slate-500">{getSessionErrorMessage()}</p>
           </div>
         </div>
       </main>
