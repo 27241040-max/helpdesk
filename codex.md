@@ -18,6 +18,7 @@
 - `req.user`、`req.session` 的 Express 类型扩展在 `server/src/types/express.d.ts`。
 - 用户包含附加字段 `role`，可选值为 `admin` / `agent`，默认值为 `agent`。
 - Better Auth 已禁用邮箱注册入口：`disabledPaths: ["/sign-up/email"]`，当前只支持已有账号登录。
+- Better Auth 速率限制已显式配置为仅在生产环境开启：`server/src/lib/auth.ts` 中 `rateLimit.enabled = process.env.NODE_ENV === "production"`。
 
 ## 3. 路由与页面
 - `/login`：公开登录页，文件在 `client/src/pages/LoginPages.tsx`。
@@ -38,9 +39,18 @@
 - `admin@example.com` / `qwerdf66` / `admin`
 - `agent@example.com` / `qwerdf66` / `agent`
 - `server/.env` 与 `server/.env.example` 中的默认管理员密码已同步为 `qwerdf66`。
+- Playwright 使用独立环境文件 `server/.env.playwright`，默认测试库为 `helpdesk_playwright`，默认服务端端口为 `4100`，前端端口为 `4173`。
+- `server/.env.playwright` 与 `server/.env.playwright.local` 已被 `.gitignore` 忽略，不应提交。
 
 ## 6. 常用命令
 - 前端构建：在 `client` 下运行 `npm run build`。
 - 服务端生成 Better Auth schema：在 `server` 下运行 `npm run auth:generate`。
 - Prisma Client 生成：在 `server` 下运行 `npm run prisma:generate`。
 - Prisma Seed：在 `server` 下运行 `npm run prisma:seed`。
+- Playwright 配置文件在根目录：`playwright.config.ts`。
+- Playwright 会在 `globalSetup` 中先执行测试库初始化，再启动前后端。
+- Playwright 测试库初始化脚本：`npm run playwright:db:setup`，内部执行 `prisma db push + prisma db seed`。
+- 单独执行 Playwright 测试库 schema 同步：`npm run playwright:db:push`。
+- 单独执行 Playwright 测试库种子：`npm run playwright:db:seed`。
+- Playwright 安装浏览器：`npm run playwright:install`。
+- Playwright 运行命令：`npm run playwright:test` / `npm run playwright:test:ui`。

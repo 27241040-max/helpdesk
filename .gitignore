@@ -22,10 +22,14 @@ out/
 
 # Environment configs (Never commit!)
 .env
+.env.playwright
+.env.playwright.local
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+**/.env.playwright
+**/.env.playwright.local
 
 # Prisma 
 *.db

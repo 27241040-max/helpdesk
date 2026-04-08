@@ -7,6 +7,17 @@
     "server"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces"
+    "dev": "npm run dev --workspaces",
+    "typecheck": "npm run build --workspace client && npx tsc -p server/tsconfig.json --noEmit && npx tsc -p tsconfig.playwright.json --noEmit",
+    "playwright:install": "playwright install",
+    "playwright:test": "playwright test",
+    "playwright:test:ui": "playwright test --ui",
+    "playwright:db:setup": "node scripts/playwright-db.mjs setup",
+    "playwright:db:push": "node scripts/playwright-db.mjs push",
+    "playwright:db:seed": "node scripts/playwright-db.mjs seed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "dotenv": "^17.4.1"
   }
 }

@@ -6,6 +6,8 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { getRequiredEnv, trustedOrigins } from "../config";
 import { prisma } from "../prisma";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const auth = betterAuth({
   secret: getRequiredEnv("BETTER_AUTH_SECRET"),
   baseURL: getRequiredEnv("BETTER_AUTH_URL"),
@@ -25,6 +27,9 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  rateLimit: {
+    enabled: isProduction,
+  },
   emailAndPassword: {
     enabled: true,
   },
