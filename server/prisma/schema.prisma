@@ -19,6 +19,9 @@ model User {
   name          String
   email         String    @unique
   role          UserRole  @default(agent)
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime?
   emailVerified Boolean   @default(false)
   image         String?
   createdAt     DateTime  @default(now())

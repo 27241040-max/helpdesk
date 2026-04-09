@@ -8,8 +8,9 @@
 - 后端：Express + TypeScript + Prisma，开发端口 `4000`。
 - 数据库：PostgreSQL。
 - 前端路径别名：`client` 内已配置 `@/* -> src/*`。
-- 前端数据请求默认约定：优先使用 `axios` 作为 HTTP 客户端，优先使用 `@tanstack/react-query` 管理服务端状态；除非有明确理由，否则不要为常规数据获取继续新增裸 `fetch` 或手写 `useEffect + useState` 请求逻辑。
+- 前端数据请求默认约定：优先使用 `axios` 作为 HTTP 客户端，优先使用 `@tanstack/react-query` 管理服务端状态；表单、接口入参和其他结构化数据校验优先使用 `zod`；除非有明确理由，否则不要为常规数据获取继续新增裸 `fetch` 或手写 `useEffect + useState` 请求逻辑。
 - 前端组件/单元测试当前使用 `Vitest + React Testing Library + jsdom + jest-dom`，测试配置在 `client/vite.config.ts`。
+- 共享的 `zod` schema 优先定义在 `core` workspace 包中，再由 `client` 和 `server` 共同引用；避免在前后端重复定义同一份数据结构校验。
 
 ## 2. 认证与权限
 - 认证方案使用 Better Auth。
@@ -19,6 +20,8 @@
 - 受保护后端中间件：`server/src/middleware/require-auth.ts`。
 - `req.user`、`req.session` 的 Express 类型扩展在 `server/src/types/express.d.ts`。
 - 用户包含附加字段 `role`，可选值为 `admin` / `agent`，默认值为 `agent`。
+- 服务端涉及角色值时，优先使用 Prisma 生成的 `UserRole` enum，避免直接硬编码 `"admin"` / `"agent"` 字面量。
+- 使用 Express 5 编写异步路由时，优先依赖其对 rejected promises 的自动错误传递，不要为常规 async handler 额外包一层 `try/catch`；需要统一映射错误响应时，放到全局 error middleware。
 - Better Auth 已禁用邮箱注册入口：`disabledPaths: ["/sign-up/email"]`，当前只支持已有账号登录。
 - Better Auth 速率限制已显式配置为仅在生产环境开启：`server/src/lib/auth.ts` 中 `rateLimit.enabled = process.env.NODE_ENV === "production"`。
 

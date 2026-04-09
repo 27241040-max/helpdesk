@@ -4,6 +4,7 @@
 
 - 前端 HTTP 请求优先使用 `axios`。
 - React 组件中的服务端状态管理优先使用 `@tanstack/react-query`。
+- 表单、接口入参和其他结构化数据校验优先使用 `zod`。
 - 除非有明确理由，否则不要继续新增裸 `fetch` 调用，也不要为常规数据加载手写 `useEffect + useState` 请求流程。
 
 ## 前端测试约定

@@ -1,6 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import { type CreateUserInput } from "core/users";
+import { PlusIcon } from "lucide-react";
+import { useState } from "react";
 
+import { CreateUserDialog } from "@/components/users/CreateUserDialog";
+import { UsersTable, type UserListItem } from "@/components/users/UsersTable";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,45 +15,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { apiClient } from "../lib/api-client";
-
-type UserListItem = {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "agent";
-  emailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
 
 type UsersResponse = {
   users: UserListItem[];
 };
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+type CreateUserResponse = { user: UserListItem };
 
-function getRoleBadgeClassName(role: UserListItem["role"]) {
-  if (role === "admin") {
-    return "border-transparent bg-primary text-primary-foreground";
+function getCreateUserErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ error?: string }>(error)) {
+    return error.response?.data?.error ?? "创建用户失败，请稍后再试。";
   }
 
-  return "border-border bg-secondary text-secondary-foreground";
+  return "创建用户失败，请稍后再试。";
 }
 
 function UsersTableSkeleton() {
@@ -82,11 +66,28 @@ function UsersTableSkeleton() {
 }
 
 export function UsersPage() {
+  const queryClient = useQueryClient();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createUserErrorMessage, setCreateUserErrorMessage] = useState<string>();
   const { data, isPending, isError, error } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
       const response = await apiClient.get<UsersResponse>("/api/users");
       return response.data;
+    },
+  });
+  const createUserMutation = useMutation({
+    mutationFn: async (values: CreateUserInput) => {
+      const response = await apiClient.post<CreateUserResponse>("/api/users", values);
+      return response.data;
+    },
+    onSuccess: async () => {
+      setCreateUserErrorMessage(undefined);
+      setIsCreateDialogOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (mutationError) => {
+      setCreateUserErrorMessage(getCreateUserErrorMessage(mutationError));
     },
   });
 
@@ -96,84 +97,79 @@ export function UsersPage() {
 
   const users = data?.users ?? [];
 
-  return (
-    <section className="grid gap-6">
-      <Card className="gap-0 rounded-2xl">
-        <CardHeader className="border-b">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-            <Badge className="w-fit uppercase" variant="secondary">
-              Admin Only
-            </Badge>
-            <CardTitle className="text-[1.55rem] font-semibold tracking-[-0.04em]">
-              Users
-            </CardTitle>
-            <CardDescription className="text-[0.95rem] leading-6">
-              仅管理员可查看系统内的账号列表。这里展示当前用户的基础资料、角色和邮箱验证状态。
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div>
-            <h3 className="text-lg font-semibold tracking-tight text-card-foreground">用户列表</h3>
-            <p className="mt-1 text-sm text-muted-foreground">当前共 {users.length} 个用户</p>
-          </div>
-        </CardContent>
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsCreateDialogOpen(open);
 
-        {isPending ? (
-          <UsersTableSkeleton />
-        ) : isError ? (
-          <CardContent className="pb-6 pt-2 text-sm text-destructive">
-            用户列表加载失败，请稍后再试。
+    if (!open) {
+      createUserMutation.reset();
+      setCreateUserErrorMessage(undefined);
+    }
+  };
+
+  const onSubmit = async (values: CreateUserInput) => {
+    setCreateUserErrorMessage(undefined);
+    try {
+      await createUserMutation.mutateAsync(values);
+    } catch {
+      // Error state is surfaced through the mutation's onError handler.
+    }
+  };
+
+  return (
+    <>
+      <section className="grid gap-6">
+        <Card className="gap-0 rounded-2xl">
+          <CardHeader className="border-b">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+              <Badge className="w-fit uppercase" variant="secondary">
+                Admin Only
+              </Badge>
+              <CardTitle className="text-[1.55rem] font-semibold tracking-[-0.04em]">
+                Users
+              </CardTitle>
+              <CardDescription className="text-[0.95rem] leading-6">
+                仅管理员可查看系统内的账号列表。这里展示当前用户的基础资料、角色和邮箱验证状态。
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold tracking-tight text-card-foreground">用户列表</h3>
+                <p className="mt-1 text-sm text-muted-foreground">当前共 {users.length} 个用户</p>
+              </div>
+              <Button className="min-w-32" onClick={() => setIsCreateDialogOpen(true)} type="button">
+                <PlusIcon className="size-4" />
+                创建用户
+              </Button>
+            </div>
           </CardContent>
-        ) : users.length === 0 ? (
-          <CardContent className="pb-6 pt-2 text-sm text-muted-foreground">
-            暂无用户数据。
-          </CardContent>
-        ) : (
-          <div className="px-4 pb-4 md:px-6">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead>用户</TableHead>
-                  <TableHead>角色</TableHead>
-                  <TableHead>邮箱验证</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  <TableHead>最近更新</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="align-top">
-                      <strong className="block text-sm text-card-foreground">{user.name}</strong>
-                      <span className="mt-1 block text-sm text-muted-foreground">{user.email}</span>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <Badge
-                        className={`uppercase tracking-[0.12em] ${getRoleBadgeClassName(user.role)}`}
-                        variant="outline"
-                      >
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <Badge variant={user.emailVerified ? "secondary" : "outline"}>
-                        {user.emailVerified ? "已验证" : "未验证"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="align-top text-muted-foreground">
-                      {formatDate(user.createdAt)}
-                    </TableCell>
-                    <TableCell className="align-top text-muted-foreground">
-                      {formatDate(user.updatedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </Card>
-    </section>
+
+          {isPending ? (
+            <UsersTableSkeleton />
+          ) : isError ? (
+            <CardContent className="pb-6 pt-2 text-sm text-destructive">
+              用户列表加载失败，请稍后再试。
+            </CardContent>
+          ) : users.length === 0 ? (
+            <CardContent className="pb-6 pt-2 text-sm text-muted-foreground">
+              暂无用户数据。
+            </CardContent>
+          ) : (
+            <div className="px-4 pb-4 md:px-6">
+              <UsersTable users={users} />
+            </div>
+          )}
+        </Card>
+      </section>
+
+      <CreateUserDialog
+        errorMessage={createUserErrorMessage}
+        isOpen={isCreateDialogOpen}
+        isSubmitting={createUserMutation.isPending}
+        onOpenChange={handleDialogOpenChange}
+        onSubmit={onSubmit}
+      />
+    </>
   );
 }

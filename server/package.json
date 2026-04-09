@@ -19,10 +19,12 @@
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.6.0",
     "better-auth": "^1.6.0",
+    "core": "*",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",

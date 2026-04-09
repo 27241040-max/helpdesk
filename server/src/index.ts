@@ -3,13 +3,13 @@ import "dotenv/config";
 import type { ErrorRequestHandler } from "express";
 import express from 'express';
 import cors from 'cors';
+import { APIError } from "better-call";
 import { toNodeHandler } from 'better-auth/node';
 
 import { auth } from './auth';
 import { isAllowedOrigin } from './config';
-import { requireAdmin } from './middleware/require-admin';
 import { requireAuth } from './middleware/require-auth';
-import { prisma } from './prisma';
+import { usersRouter } from "./routes/users";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -38,28 +38,22 @@ app.get('/api/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
-app.get('/api/users', requireAuth, requireAdmin, async (req, res) => {
-  const users = await prisma.user.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      emailVerified: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  res.json({ users });
-});
+app.use("/api/users", usersRouter);
 
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   if (res.headersSent) {
     next(error);
+    return;
+  }
+
+  if (error instanceof APIError) {
+    if (error.status === 400 && error.body?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+      res.status(409).json({ error: "该邮箱已存在。" });
+      return;
+    }
+
+    const statusCode = typeof error.status === "number" ? error.status : Number(error.status) || 500;
+    res.status(statusCode).json({ error: error.body?.message ?? "创建用户失败。" });
     return;
   }
 
