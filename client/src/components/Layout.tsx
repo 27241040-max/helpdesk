@@ -39,8 +39,20 @@ export function Layout({ displayName, isAdmin }: LayoutProps) {
             >
               Helpdesk
             </NavLink>
-            {isAdmin ? (
-              <nav aria-label="Primary" className="flex items-center gap-2">
+            <nav aria-label="Primary" className="flex items-center gap-2">
+              <NavLink
+                className={({ isActive }) =>
+                  `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`
+                }
+                to="/tickets"
+              >
+                工单
+              </NavLink>
+              {isAdmin ? (
                 <NavLink
                   className={({ isActive }) =>
                     `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -53,8 +65,8 @@ export function Layout({ displayName, isAdmin }: LayoutProps) {
                 >
                   用户
                 </NavLink>
-              </nav>
-            ) : null}
+              ) : null}
+            </nav>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-3 py-1.5">
             <div>

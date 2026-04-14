@@ -9,6 +9,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth';
 import { isAllowedOrigin } from './config';
 import { inboundEmailRouter } from "./routes/inbound-email";
+import { ticketsRouter } from "./routes/tickets";
 import { requireAuth } from './middleware/require-auth';
 import { usersRouter } from "./routes/users";
 
@@ -40,6 +41,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 });
 
 app.use("/api/inbound/email", inboundEmailRouter);
+app.use("/api/tickets", ticketsRouter);
 app.use("/api/users", usersRouter);
 
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {

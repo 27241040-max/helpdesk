@@ -27,3 +27,16 @@ export const inboundEmailSchema = z.object({
 });
 
 export type InboundEmailInput = z.infer<typeof inboundEmailSchema>;
+
+export type TicketListItem = {
+  category: TicketCategory | null;
+  createdAt: string;
+  customer: {
+    email: string;
+    id: number;
+    name: string;
+  };
+  id: number;
+  status: TicketStatus;
+  subject: string;
+};

@@ -12,6 +12,7 @@
 - 前端组件/单元测试当前使用 `Vitest + React Testing Library + jsdom + jest-dom`，测试配置在 `client/vite.config.ts`。
 - 共享的 `zod` schema 优先定义在 `core` workspace 包中，再由 `client` 和 `server` 共同引用；避免在前后端重复定义同一份数据结构校验。
 - 客户端涉及角色值时，统一使用 `core/users` 中的 `UserRole` enum，包括路由守卫、按钮禁用逻辑和页面条件分支，避免硬编码 `"admin"` / `"agent"`。
+- 后续测试策略默认优先使用组件测试/单元测试；只有在跨页面真实浏览器流程、登录会话、导航串联或 webhook/集成链路确实需要验证时，才补充使用 e2e 测试。
 
 ## 2. 认证与权限
 - 认证方案使用 Better Auth。
