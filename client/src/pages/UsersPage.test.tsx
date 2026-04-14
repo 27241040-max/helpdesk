@@ -95,6 +95,63 @@ describe("UsersPage", () => {
     });
   });
 
+  test("shows the create user dialog when the button is clicked", async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        users: [],
+      },
+    });
+
+    renderWithQuery(<UsersPage />);
+
+    await screen.findByText("暂无用户数据。");
+    expect(screen.queryByRole("heading", { name: "创建新用户" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "创建用户" }));
+
+    expect(screen.getByRole("heading", { name: "创建新用户" })).toBeVisible();
+  });
+
+  test("hides the create user dialog when clicking outside or the close button", async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        users: [],
+      },
+    });
+
+    renderWithQuery(<UsersPage />);
+
+    await screen.findByText("暂无用户数据。");
+
+    fireEvent.click(screen.getByRole("button", { name: "创建用户" }));
+    expect(screen.getByRole("heading", { name: "创建新用户" })).toBeVisible();
+
+    const overlay = document.querySelector('[data-slot="dialog-overlay"]');
+    expect(overlay).not.toBeNull();
+
+    if (!overlay) {
+      throw new Error("Dialog overlay not found");
+    }
+
+    fireEvent.pointerDown(overlay);
+    fireEvent.mouseDown(overlay);
+    fireEvent.mouseUp(overlay);
+    fireEvent.click(overlay);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "创建新用户" })).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "创建用户" }));
+    expect(screen.getByRole("heading", { name: "创建新用户" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "创建新用户" })).not.toBeInTheDocument();
+    });
+  });
+
   test("opens the create user dialog and validates the form", async () => {
     mockedApiClient.get.mockResolvedValue({
       data: {
