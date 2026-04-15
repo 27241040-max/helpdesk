@@ -43,7 +43,7 @@ function DetailItem({
   value: ReactNode;
 }) {
   return (
-    <div className="grid gap-1.5 rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+    <div className="grid gap-1.5">
       <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground/80">{label}</span>
       <div className="text-sm text-card-foreground">{value}</div>
     </div>
@@ -52,9 +52,9 @@ function DetailItem({
 
 function TicketDetailSkeleton() {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-6">
       <Skeleton className="h-8 w-32" />
-      <div className="grid gap-4 rounded-[28px] border border-border bg-card p-6 shadow-sm">
+      <div className="grid gap-6">
         <div className="grid gap-3">
           <Skeleton className="h-5 w-20" />
           <Skeleton className="h-10 w-2/3" />
@@ -63,12 +63,20 @@ function TicketDetailSkeleton() {
             <Skeleton className="h-6 w-24 rounded-full" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 border-t border-border/70 pt-6 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton className="h-24 rounded-2xl" key={index} />
+            <div className="grid gap-2" key={index}>
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-6 w-2/3" />
+            </div>
           ))}
         </div>
-        <Skeleton className="h-40 rounded-2xl" />
+        <div className="grid gap-2 rounded-[24px] border border-border/70 bg-muted/20 p-5">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-[92%]" />
+          <Skeleton className="h-6 w-[78%]" />
+        </div>
       </div>
     </div>
   );
@@ -113,7 +121,7 @@ export function TicketDetailPage() {
           <p className="text-sm text-muted-foreground">{getTicketDetailErrorMessage(error)}</p>
         </article>
       ) : data ? (
-        <article className="grid gap-6 rounded-[28px] border border-border bg-card p-6 shadow-sm">
+        <article className="grid gap-8">
           <div className="grid gap-3">
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Ticket Detail</p>
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -132,7 +140,7 @@ export function TicketDetailPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 border-t border-border/70 pt-6 md:grid-cols-2 xl:grid-cols-3">
             <DetailItem label="客户" value={<strong>{data.customer.name}</strong>} />
             <DetailItem label="客户邮箱" value={data.customer.email} />
             <DetailItem
@@ -153,7 +161,7 @@ export function TicketDetailPage() {
             <DetailItem label="更新时间" value={formatTicketDate(data.updatedAt)} />
           </div>
 
-          <div className="grid gap-2 rounded-[24px] border border-border/70 bg-muted/20 p-5">
+          <div className="grid gap-2 rounded-[24px] border border-border/70 bg-muted/20 p-5 shadow-sm">
             <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground/80">正文</span>
             <p className="whitespace-pre-wrap text-sm leading-7 text-card-foreground">{data.bodyText}</p>
           </div>
