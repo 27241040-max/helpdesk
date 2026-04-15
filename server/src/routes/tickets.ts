@@ -1,4 +1,9 @@
-import { ticketListQuerySchema, type TicketSortField, type TicketSortOrder } from "core/email";
+import {
+  ticketAssignmentSchema,
+  ticketListQuerySchema,
+  type TicketSortField,
+  type TicketSortOrder,
+} from "core/email";
 import { Router } from "express";
 
 import { Prisma } from "../generated/prisma";
@@ -10,6 +15,31 @@ import { prisma } from "../prisma";
 export const ticketsRouter = Router();
 
 ticketsRouter.use(requireAuth);
+
+const ticketDetailSelect = {
+  id: true,
+  subject: true,
+  bodyText: true,
+  status: true,
+  category: true,
+  source: true,
+  createdAt: true,
+  updatedAt: true,
+  customer: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
+  assignedUser: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
+} satisfies Prisma.TicketSelect;
 
 function getTicketOrderBy(
   sortBy: TicketSortField,
@@ -119,30 +149,7 @@ ticketsRouter.get("/:id", async (req, res) => {
 
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
-    select: {
-      id: true,
-      subject: true,
-      bodyText: true,
-      status: true,
-      category: true,
-      source: true,
-      createdAt: true,
-      updatedAt: true,
-      customer: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      assignedUser: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
+    select: ticketDetailSelect,
   });
 
   if (!ticket) {
@@ -151,4 +158,56 @@ ticketsRouter.get("/:id", async (req, res) => {
   }
 
   res.json(ticket);
+});
+
+ticketsRouter.patch("/:id/assignment", async (req, res) => {
+  const ticketId = Number.parseInt(req.params.id, 10);
+
+  if (!Number.isInteger(ticketId) || ticketId <= 0) {
+    res.status(400).json({ error: "工单 ID 无效。" });
+    return;
+  }
+
+  const result = ticketAssignmentSchema.safeParse(req.body ?? {});
+
+  if (!result.success) {
+    res.status(400).json({ error: getIssueMessage(result.error) });
+    return;
+  }
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    select: { id: true },
+  });
+
+  if (!ticket) {
+    res.status(404).json({ error: "工单不存在。" });
+    return;
+  }
+
+  if (result.data.assignedUserId) {
+    const agent = await prisma.user.findFirst({
+      where: {
+        id: result.data.assignedUserId,
+        deletedAt: null,
+        role: "agent",
+      },
+      select: { id: true },
+    });
+
+    if (!agent) {
+      res.status(400).json({ error: "所选代理不存在。" });
+      return;
+    }
+  }
+
+  const updatedTicket = await prisma.ticket.update({
+    where: { id: ticketId },
+    data: {
+      assignedUserId: result.data.assignedUserId,
+    },
+    select: ticketDetailSelect,
+  });
+
+  res.json(updatedTicket);
 });

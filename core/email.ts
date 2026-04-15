@@ -44,6 +44,10 @@ export const ticketListQuerySchema = z.object({
   sortOrder: ticketSortOrderSchema.optional(),
 });
 
+export const ticketAssignmentSchema = z.object({
+  assignedUserId: z.string().trim().min(1).nullable(),
+});
+
 const emailSchema = z.string().trim().min(1, "请输入有效的邮箱地址").email("请输入有效的邮箱地址");
 
 export const inboundEmailSchema = z.object({
@@ -62,6 +66,7 @@ export type InboundEmailInput = z.infer<typeof inboundEmailSchema>;
 export type TicketSortField = z.infer<typeof ticketSortFieldSchema>;
 export type TicketSortOrder = z.infer<typeof ticketSortOrderSchema>;
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;
+export type TicketAssignmentInput = z.infer<typeof ticketAssignmentSchema>;
 export type TicketListMeta = {
   page: number;
   pageSize: number;
@@ -101,4 +106,10 @@ export type TicketDetail = {
   status: TicketStatus;
   subject: string;
   updatedAt: string;
+};
+
+export type TicketAssignableAgent = {
+  email: string;
+  id: string;
+  name: string;
 };

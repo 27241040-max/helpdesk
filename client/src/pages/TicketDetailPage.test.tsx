@@ -1,7 +1,7 @@
 import { type TicketDetail, TicketCategory, TicketStatus } from "core/email";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { apiClient } from "../lib/api-client";
 import { renderWithQuery } from "../test/render-with-query";
@@ -10,10 +10,23 @@ import { TicketDetailPage } from "./TicketDetailPage";
 vi.mock("../lib/api-client", () => ({
   apiClient: {
     get: vi.fn(),
+    patch: vi.fn(),
   },
 }));
 
 const mockedApiClient = vi.mocked(apiClient);
+const agents = [
+  {
+    id: "user_1",
+    name: "Agent Smith",
+    email: "agent@example.com",
+  },
+  {
+    id: "user_2",
+    name: "Taylor Agent",
+    email: "taylor.agent@example.com",
+  },
+];
 
 const ticketDetail: TicketDetail = {
   assignedUser: {
@@ -47,18 +60,37 @@ function renderTicketDetailPage(entry = "/tickets/7") {
 }
 
 describe("TicketDetailPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.setPointerCapture ??= () => undefined;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+  });
+
   test("renders ticket details", async () => {
-    mockedApiClient.get.mockResolvedValue({ data: ticketDetail });
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        return { data: ticketDetail };
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
 
     renderTicketDetailPage();
 
     await screen.findByText("Refund request follow-up");
 
     expect(screen.getByText("Customer requested an update about the refund timeline.")).toBeVisible();
+    expect(screen.getByText("客户")).toBeVisible();
     expect(screen.getByText("Taylor")).toBeVisible();
+    expect(screen.getByText("客户邮箱")).toBeVisible();
     expect(screen.getByText("taylor@example.com")).toBeVisible();
-    expect(screen.getByText("Agent Smith")).toBeVisible();
-    expect(screen.getByText("agent@example.com")).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "指派人" })).toHaveTextContent("Agent Smith");
     expect(screen.getByText("Refund Request")).toBeVisible();
     expect(screen.getByText("inbound_email")).toBeVisible();
     expect(screen.getByRole("link", { name: "返回工单列表" })).toHaveAttribute("href", "/tickets");
@@ -66,14 +98,24 @@ describe("TicketDetailPage", () => {
   });
 
   test("renders a not found state when the ticket does not exist", async () => {
-    mockedApiClient.get.mockRejectedValue({
-      isAxiosError: true,
-      response: {
-        data: {
-          error: "工单不存在。",
-        },
-        status: 404,
-      },
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        throw {
+          isAxiosError: true,
+          response: {
+            data: {
+              error: "工单不存在。",
+            },
+            status: 404,
+          },
+        };
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
     });
 
     renderTicketDetailPage();
@@ -83,7 +125,17 @@ describe("TicketDetailPage", () => {
   });
 
   test("renders a generic error state when the request fails", async () => {
-    mockedApiClient.get.mockRejectedValue(new Error("boom"));
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        throw new Error("boom");
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
 
     renderTicketDetailPage();
 
@@ -92,17 +144,65 @@ describe("TicketDetailPage", () => {
   });
 
   test("renders fallback text when the ticket is unassigned and uncategorized", async () => {
-    mockedApiClient.get.mockResolvedValue({
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        return {
+          data: {
+            ...ticketDetail,
+            assignedUser: null,
+            category: null,
+          } satisfies TicketDetail,
+        };
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
+
+    renderTicketDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getAllByText("未指派").length).toBeGreaterThan(0);
+    });
+    expect(screen.getByRole("combobox", { name: "指派人" })).toHaveTextContent("未指派");
+    expect(screen.getByText("未分类")).toBeVisible();
+  });
+
+  test("assigns the ticket to a different agent", async () => {
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        return { data: ticketDetail };
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
+    mockedApiClient.patch.mockResolvedValue({
       data: {
         ...ticketDetail,
-        assignedUser: null,
-        category: null,
+        assignedUser: agents[1],
       } satisfies TicketDetail,
     });
 
     renderTicketDetailPage();
 
-    await screen.findByText("未指派");
-    expect(screen.getByText("未分类")).toBeVisible();
+    await screen.findByText("Refund request follow-up");
+
+    fireEvent.click(screen.getByRole("combobox", { name: "指派人" }));
+    const listbox = await screen.findByRole("listbox");
+    fireEvent.click(within(listbox).getByText("Taylor Agent"));
+
+    await waitFor(() => {
+      expect(mockedApiClient.patch).toHaveBeenCalledWith("/api/tickets/7/assignment", {
+        assignedUserId: "user_2",
+      });
+    });
+    expect(screen.getByRole("combobox", { name: "指派人" })).toHaveTextContent("Taylor Agent");
   });
 });
