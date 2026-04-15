@@ -24,6 +24,13 @@ export function getTicketCategoryLabel(category: TicketCategory | null) {
   }
 }
 
+export const ticketCategoryOptions: Array<{ label: string; value: TicketCategory | null }> = [
+  { label: "未分类", value: null },
+  { label: "General", value: TicketCategory.general },
+  { label: "Technical", value: TicketCategory.technical },
+  { label: "Refund Request", value: TicketCategory.refundRequest },
+];
+
 export function getTicketStatusLabel(status: TicketStatus) {
   switch (status) {
     case TicketStatus.open:
@@ -34,6 +41,12 @@ export function getTicketStatusLabel(status: TicketStatus) {
       return "Closed";
   }
 }
+
+export const ticketStatusOptions: Array<{ label: string; value: TicketStatus }> = [
+  { label: "Open", value: TicketStatus.open },
+  { label: "Resolved", value: TicketStatus.resolved },
+  { label: "Closed", value: TicketStatus.closed },
+];
 
 export function getTicketStatusClassName(status: TicketStatus) {
   switch (status) {

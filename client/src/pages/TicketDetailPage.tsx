@@ -1,14 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { ArrowLeftIcon } from "lucide-react";
-import { type TicketAssignableAgent, type TicketDetail } from "core/email";
+import {
+  type TicketAssignableAgent,
+  type TicketCategory,
+  type TicketDetail,
+  TicketStatus,
+  type TicketStatus as TicketStatusValue,
+} from "core/email";
 import { type ReactNode, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import {
   formatTicketDate,
   getTicketCategoryLabel,
-  TicketStatusBadge,
+  getTicketStatusLabel,
+  ticketCategoryOptions,
+  ticketStatusOptions,
 } from "@/components/tickets/ticket-display";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "../lib/api-client";
 
 const unassignedAgentValue = "__unassigned__";
+const uncategorizedValue = "__uncategorized__";
 
 function getTicketDetailErrorState(error: unknown): "error" | "not_found" {
   if (
@@ -52,6 +61,14 @@ function getTicketAssignmentErrorMessage(error: unknown) {
   return "分配代理失败，请稍后再试。";
 }
 
+function getTicketUpdateErrorMessage(error: unknown) {
+  if (axios.isAxiosError<{ error?: string }>(error)) {
+    return error.response?.data?.error ?? "更新工单失败，请稍后再试。";
+  }
+
+  return "更新工单失败，请稍后再试。";
+}
+
 function DetailItem({
   label,
   value,
@@ -60,8 +77,8 @@ function DetailItem({
   value: ReactNode;
 }) {
   return (
-    <div className="grid gap-1.5 content-start">
-      <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground/80">{label}</span>
+    <div className="grid gap-1">
+      <span className="text-sm text-muted-foreground">{label}</span>
       <div className="text-sm text-card-foreground">{value}</div>
     </div>
   );
@@ -69,31 +86,33 @@ function DetailItem({
 
 function TicketDetailSkeleton() {
   return (
-    <div className="grid gap-6">
-      <Skeleton className="h-8 w-32" />
-      <div className="grid gap-6">
-        <div className="grid gap-3">
-          <Skeleton className="h-5 w-20" />
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_240px] lg:items-start lg:gap-8">
+      <div className="grid gap-5">
+        <Skeleton className="h-8 w-32" />
+        <div className="grid gap-2">
           <Skeleton className="h-10 w-2/3" />
-          <div className="flex gap-3">
-            <Skeleton className="h-6 w-20 rounded-full" />
-            <Skeleton className="h-6 w-24 rounded-full" />
-          </div>
+          <Skeleton className="h-5 w-24" />
         </div>
-        <div className="grid gap-4 border-t border-border/70 pt-6 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div className="grid gap-2" key={index}>
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-6 w-[85%]" />
-            </div>
-          ))}
+        <div className="grid gap-2">
+          <Skeleton className="h-5 w-72" />
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-5 w-48" />
         </div>
-        <div className="grid gap-2 rounded-[24px] border border-border/70 bg-muted/20 p-5">
-          <Skeleton className="h-4 w-16" />
+        <div className="grid gap-2 rounded-[20px] border border-border/70 bg-card p-5 shadow-sm">
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-4 w-24" />
           <Skeleton className="h-6 w-full" />
           <Skeleton className="h-6 w-[92%]" />
           <Skeleton className="h-6 w-[78%]" />
         </div>
+      </div>
+      <div className="grid gap-4">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div className="grid gap-1" key={index}>
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-9 w-full rounded-full" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -104,6 +123,9 @@ export function TicketDetailPage() {
   const ticketId = params.ticketId;
   const queryClient = useQueryClient();
   const [assignmentDraft, setAssignmentDraft] = useState<string | null>(null);
+  const [statusDraft, setStatusDraft] = useState<TicketStatusValue | null>(null);
+  const [categoryDraft, setCategoryDraft] = useState<string | null>(null);
+
   const { data, isPending, isError, error } = useQuery({
     enabled: Boolean(ticketId),
     queryKey: ["ticket", ticketId],
@@ -112,6 +134,7 @@ export function TicketDetailPage() {
       return response.data;
     },
   });
+
   const { data: agentsData } = useQuery({
     queryKey: ["ticket-assignable-agents"],
     queryFn: async () => {
@@ -120,6 +143,7 @@ export function TicketDetailPage() {
     },
     retry: false,
   });
+
   const assignmentMutation = useMutation({
     mutationFn: async (assignedUserId: string | null) => {
       const response = await apiClient.patch<TicketDetail>(`/api/tickets/${ticketId}/assignment`, {
@@ -134,6 +158,19 @@ export function TicketDetailPage() {
     },
   });
 
+  const ticketUpdateMutation = useMutation({
+    mutationFn: async (input: { category: TicketCategory | null; status: TicketStatusValue }) => {
+      const response = await apiClient.patch<TicketDetail>(`/api/tickets/${ticketId}`, input);
+      return response.data;
+    },
+    onSuccess: (updatedTicket) => {
+      setStatusDraft(null);
+      setCategoryDraft(null);
+      queryClient.setQueryData(["ticket", ticketId], updatedTicket);
+      void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+
   if (isError) {
     console.error("工单详情加载失败:", error);
   }
@@ -143,11 +180,15 @@ export function TicketDetailPage() {
   const currentAssignedAgentId = data?.assignedUser?.id ?? "";
   const selectedAgentId =
     (assignmentDraft ?? currentAssignedAgentId) || unassignedAgentValue;
+  const currentStatus = data?.status ?? TicketStatus.open;
+  const currentCategoryValue = data?.category ?? uncategorizedValue;
+  const selectedStatus = statusDraft ?? currentStatus;
+  const selectedCategory = categoryDraft ?? currentCategoryValue;
 
   return (
-    <section className="grid gap-4">
+    <section className="mx-auto grid max-w-5xl gap-4 px-2">
       <div>
-        <Button asChild type="button" variant="outline">
+        <Button asChild className="-ml-2 text-muted-foreground" type="button" variant="ghost">
           <Link to="/tickets">
             <ArrowLeftIcon className="size-4" />
             返回工单列表
@@ -165,78 +206,152 @@ export function TicketDetailPage() {
           <p className="text-sm text-muted-foreground">{getTicketDetailErrorMessage(error)}</p>
         </article>
       ) : data ? (
-        <article className="grid gap-8">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div className="grid gap-2">
+        <article className="grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_160px] lg:items-start lg:gap-8">
+          <div className="grid gap-5">
+            <div className="grid gap-1.5">
               <h2 className="text-3xl font-semibold tracking-[-0.04em] text-card-foreground">
                 {data.subject}
               </h2>
               <p className="text-sm text-muted-foreground">工单 #{data.id}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <TicketStatusBadge status={data.status} />
-              <span className="rounded-full border border-border px-3 py-1 text-sm text-muted-foreground">
-                {getTicketCategoryLabel(data.category)}
-              </span>
+
+            <div className="grid gap-2 text-sm">
+              <p className="text-card-foreground">
+                <span className="text-muted-foreground">客户:</span>{" "}
+                {data.customer.name} ({data.customer.email})
+              </p>
+              <p className="text-card-foreground">
+                <span className="text-muted-foreground">创建时间:</span>{" "}
+                {formatTicketDate(data.createdAt)}
+              </p>
+              <p className="text-card-foreground">
+                <span className="text-muted-foreground">更新时间:</span>{" "}
+                {formatTicketDate(data.updatedAt)}
+              </p>
+            </div>
+
+            <div className="grid gap-3 rounded-[20px] border border-border/70 bg-card p-5 shadow-sm">
+              <span className="text-base font-semibold text-card-foreground">正文</span>
+              <span className="text-sm text-muted-foreground">来自 {data.customer.name}</span>
+              <p className="whitespace-pre-wrap text-sm leading-7 text-card-foreground">{data.bodyText}</p>
             </div>
           </div>
 
-          <div className="border-t border-border/70 pt-6">
-            <div className="mx-auto grid max-w-6xl gap-x-10 gap-y-6 md:grid-cols-2 xl:grid-cols-3">
-              <DetailItem
-                label="客户"
-                value={<strong>{data.customer.name}</strong>}
-              />
-              <DetailItem label="客户邮箱" value={data.customer.email} />
-              <DetailItem
-                label="指派人"
-                value={
-                  <div className="grid gap-2">
-                    <Select
-                      disabled={assignmentMutation.isPending}
-                      onValueChange={(nextAgentId) => {
-                        setAssignmentDraft(nextAgentId);
+          <aside className="grid gap-4 lg:pt-1">
+            <DetailItem
+              label="状态"
+              value={
+                <Select
+                  disabled={ticketUpdateMutation.isPending}
+                  onValueChange={(nextStatus) => {
+                    setStatusDraft(nextStatus as TicketStatusValue);
 
-                        if (nextAgentId === currentAssignedAgentId) {
-                          return;
-                        }
+                    if (nextStatus === currentStatus) {
+                      return;
+                    }
 
-                        void assignmentMutation.mutateAsync(
-                          nextAgentId === unassignedAgentValue ? null : nextAgentId,
-                        );
-                      }}
-                      value={selectedAgentId}
-                    >
-                      <SelectTrigger aria-label="指派人">
-                        <SelectValue placeholder="未指派" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={unassignedAgentValue}>未指派</SelectItem>
-                        {agents.map((agent) => (
-                          <SelectItem key={agent.id} value={agent.id}>
-                            {agent.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {assignmentMutation.isError ? (
-                      <p className="text-sm text-destructive">
-                        {getTicketAssignmentErrorMessage(assignmentMutation.error)}
-                      </p>
-                    ) : null}
-                  </div>
-                }
-              />
-              <DetailItem label="来源" value={data.source} />
-              <DetailItem label="创建时间" value={formatTicketDate(data.createdAt)} />
-              <DetailItem label="更新时间" value={formatTicketDate(data.updatedAt)} />
-            </div>
-          </div>
+                    void ticketUpdateMutation.mutateAsync({
+                      category: data.category,
+                      status: nextStatus as TicketStatusValue,
+                    });
+                  }}
+                  value={selectedStatus}
+                >
+                  <SelectTrigger aria-label="状态" className="h-9 w-full min-w-0 bg-background px-3">
+                    <SelectValue placeholder={getTicketStatusLabel(data.status)} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ticketStatusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              }
+            />
+            <DetailItem
+              label="类别"
+              value={
+                <Select
+                  disabled={ticketUpdateMutation.isPending}
+                  onValueChange={(nextCategory) => {
+                    setCategoryDraft(nextCategory);
 
-          <div className="grid gap-2 rounded-[24px] border border-border/70 bg-muted/20 p-5 shadow-sm">
-            <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground/80">正文</span>
-            <p className="whitespace-pre-wrap text-sm leading-7 text-card-foreground">{data.bodyText}</p>
-          </div>
+                    if (nextCategory === currentCategoryValue) {
+                      return;
+                    }
+
+                    void ticketUpdateMutation.mutateAsync({
+                      category:
+                        nextCategory === uncategorizedValue ? null : (nextCategory as TicketCategory),
+                      status: data.status,
+                    });
+                  }}
+                  value={selectedCategory}
+                >
+                  <SelectTrigger aria-label="类别" className="h-9 w-full min-w-0 bg-background px-3">
+                    <SelectValue placeholder={getTicketCategoryLabel(data.category)} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ticketCategoryOptions.map((option) => (
+                      <SelectItem
+                        key={option.value ?? uncategorizedValue}
+                        value={option.value ?? uncategorizedValue}
+                      >
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              }
+            />
+            <DetailItem
+              label="指派给"
+              value={
+                <div className="grid gap-2">
+                  <Select
+                    disabled={assignmentMutation.isPending}
+                    onValueChange={(nextAgentId) => {
+                      setAssignmentDraft(nextAgentId);
+
+                      if (nextAgentId === currentAssignedAgentId) {
+                        return;
+                      }
+
+                      void assignmentMutation.mutateAsync(
+                        nextAgentId === unassignedAgentValue ? null : nextAgentId,
+                      );
+                    }}
+                    value={selectedAgentId}
+                  >
+                    <SelectTrigger aria-label="指派给" className="h-9 w-full min-w-0 bg-background px-3">
+                      <SelectValue placeholder="未指派" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={unassignedAgentValue}>未指派</SelectItem>
+                      {agents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {assignmentMutation.isError ? (
+                    <p className="text-sm text-destructive">
+                      {getTicketAssignmentErrorMessage(assignmentMutation.error)}
+                    </p>
+                  ) : null}
+                </div>
+              }
+            />
+          </aside>
+
+          {ticketUpdateMutation.isError ? (
+            <p className="text-sm text-destructive lg:col-span-2">
+              {getTicketUpdateErrorMessage(ticketUpdateMutation.error)}
+            </p>
+          ) : null}
         </article>
       ) : null}
     </section>

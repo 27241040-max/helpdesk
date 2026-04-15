@@ -86,13 +86,13 @@ describe("TicketDetailPage", () => {
     await screen.findByText("Refund request follow-up");
 
     expect(screen.getByText("Customer requested an update about the refund timeline.")).toBeVisible();
-    expect(screen.getByText("客户")).toBeVisible();
-    expect(screen.getByText("Taylor")).toBeVisible();
-    expect(screen.getByText("客户邮箱")).toBeVisible();
-    expect(screen.getByText("taylor@example.com")).toBeVisible();
-    expect(screen.getByRole("combobox", { name: "指派人" })).toHaveTextContent("Agent Smith");
-    expect(screen.getByText("Refund Request")).toBeVisible();
-    expect(screen.getByText("inbound_email")).toBeVisible();
+    expect(screen.getByText(/客户:/)).toBeVisible();
+    expect(screen.getByText("Taylor (taylor@example.com)")).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "指派给" })).toHaveTextContent("Agent Smith");
+    expect(screen.getByRole("combobox", { name: "状态" })).toHaveTextContent("Open");
+    expect(screen.getByRole("combobox", { name: "类别" })).toHaveTextContent("Refund Request");
+    expect(screen.getByText("正文")).toBeVisible();
+    expect(screen.getByText("来自 Taylor")).toBeVisible();
     expect(screen.getByRole("link", { name: "返回工单列表" })).toHaveAttribute("href", "/tickets");
     expect(mockedApiClient.get).toHaveBeenCalledWith("/api/tickets/7");
   });
@@ -167,7 +167,7 @@ describe("TicketDetailPage", () => {
     await waitFor(() => {
       expect(screen.getAllByText("未指派").length).toBeGreaterThan(0);
     });
-    expect(screen.getByRole("combobox", { name: "指派人" })).toHaveTextContent("未指派");
+    expect(screen.getByRole("combobox", { name: "指派给" })).toHaveTextContent("未指派");
     expect(screen.getByText("未分类")).toBeVisible();
   });
 
@@ -194,7 +194,7 @@ describe("TicketDetailPage", () => {
 
     await screen.findByText("Refund request follow-up");
 
-    fireEvent.click(screen.getByRole("combobox", { name: "指派人" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "指派给" }));
     const listbox = await screen.findByRole("listbox");
     fireEvent.click(within(listbox).getByText("Taylor Agent"));
 
@@ -203,6 +203,78 @@ describe("TicketDetailPage", () => {
         assignedUserId: "user_2",
       });
     });
-    expect(screen.getByRole("combobox", { name: "指派人" })).toHaveTextContent("Taylor Agent");
+    expect(screen.getByRole("combobox", { name: "指派给" })).toHaveTextContent("Taylor Agent");
+  });
+
+  test("updates ticket status", async () => {
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        return { data: ticketDetail };
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
+    mockedApiClient.patch.mockResolvedValue({
+      data: {
+        ...ticketDetail,
+        status: TicketStatus.closed,
+      } satisfies TicketDetail,
+    });
+
+    renderTicketDetailPage();
+
+    await screen.findByText("Refund request follow-up");
+
+    fireEvent.click(screen.getByRole("combobox", { name: "状态" }));
+    const listbox = await screen.findByRole("listbox");
+    fireEvent.click(within(listbox).getByText("Closed"));
+
+    await waitFor(() => {
+      expect(mockedApiClient.patch).toHaveBeenCalledWith("/api/tickets/7", {
+        category: TicketCategory.refundRequest,
+        status: TicketStatus.closed,
+      });
+    });
+    expect(screen.getByRole("combobox", { name: "状态" })).toHaveTextContent("Closed");
+  });
+
+  test("updates ticket category", async () => {
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        return { data: ticketDetail };
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
+    mockedApiClient.patch.mockResolvedValue({
+      data: {
+        ...ticketDetail,
+        category: TicketCategory.technical,
+      } satisfies TicketDetail,
+    });
+
+    renderTicketDetailPage();
+
+    await screen.findByText("Refund request follow-up");
+
+    fireEvent.click(screen.getByRole("combobox", { name: "类别" }));
+    const listbox = await screen.findByRole("listbox");
+    fireEvent.click(within(listbox).getByText("Technical"));
+
+    await waitFor(() => {
+      expect(mockedApiClient.patch).toHaveBeenCalledWith("/api/tickets/7", {
+        category: TicketCategory.technical,
+        status: TicketStatus.open,
+      });
+    });
+    expect(screen.getByRole("combobox", { name: "类别" })).toHaveTextContent("Technical");
   });
 });
