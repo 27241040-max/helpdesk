@@ -108,3 +108,47 @@ ticketsRouter.get("/", async (req, res) => {
     tickets,
   });
 });
+
+ticketsRouter.get("/:id", async (req, res) => {
+  const ticketId = Number.parseInt(req.params.id, 10);
+
+  if (!Number.isInteger(ticketId) || ticketId <= 0) {
+    res.status(400).json({ error: "工单 ID 无效。" });
+    return;
+  }
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    select: {
+      id: true,
+      subject: true,
+      bodyText: true,
+      status: true,
+      category: true,
+      source: true,
+      createdAt: true,
+      updatedAt: true,
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      assignedUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!ticket) {
+    res.status(404).json({ error: "工单不存在。" });
+    return;
+  }
+
+  res.json(ticket);
+});

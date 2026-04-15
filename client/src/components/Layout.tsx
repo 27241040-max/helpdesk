@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import { appBrandLinkClass, getAppNavLinkClass } from "@/lib/link-styles";
 
 import { authClient } from "../lib/auth-client";
 
@@ -34,33 +35,21 @@ export function Layout({ displayName, isAdmin }: LayoutProps) {
         <header className="flex flex-col gap-2 rounded-2xl border border-border bg-card px-4 py-2 shadow-sm md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-6">
             <NavLink
-              className="text-xl font-semibold tracking-tight text-foreground transition-opacity hover:opacity-80 md:text-2xl"
+              className={appBrandLinkClass}
               to="/"
             >
               Helpdesk
             </NavLink>
             <nav aria-label="Primary" className="flex items-center gap-2">
               <NavLink
-                className={({ isActive }) =>
-                  `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`
-                }
+                className={({ isActive }) => getAppNavLinkClass(isActive)}
                 to="/tickets"
               >
                 工单
               </NavLink>
               {isAdmin ? (
                 <NavLink
-                  className={({ isActive }) =>
-                    `rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-foreground text-background"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`
-                  }
+                  className={({ isActive }) => getAppNavLinkClass(isActive)}
                   to="/users"
                 >
                   用户

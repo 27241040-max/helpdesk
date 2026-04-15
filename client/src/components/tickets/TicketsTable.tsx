@@ -10,15 +10,13 @@ import {
   ArrowUpDownIcon,
   ArrowUpIcon,
 } from "lucide-react";
+import { Link } from "react-router";
 import {
-  TicketCategory,
-  TicketStatus,
   type TicketListItem,
   type TicketSortField,
   type TicketSortOrder,
 } from "core/email";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -28,6 +26,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { appTextLinkClass } from "@/lib/link-styles";
+
+import {
+  formatTicketDate,
+  getTicketCategoryLabel,
+  TicketStatusBadge,
+} from "./ticket-display";
 
 type TicketsTableProps = {
   isSortingPending?: boolean;
@@ -38,50 +43,6 @@ type TicketsTableProps = {
   };
   tickets: TicketListItem[];
 };
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function getCategoryLabel(category: TicketListItem["category"]) {
-  if (!category) {
-    return "未分类";
-  }
-
-  switch (category) {
-    case TicketCategory.general:
-      return "General";
-    case TicketCategory.technical:
-      return "Technical";
-    case TicketCategory.refundRequest:
-      return "Refund Request";
-  }
-}
-
-function getStatusLabel(status: TicketStatus) {
-  switch (status) {
-    case TicketStatus.open:
-      return "Open";
-    case TicketStatus.resolved:
-      return "Resolved";
-    case TicketStatus.closed:
-      return "Closed";
-  }
-}
-
-function getStatusClassName(status: TicketStatus) {
-  switch (status) {
-    case TicketStatus.open:
-      return "border-transparent bg-primary text-primary-foreground";
-    case TicketStatus.resolved:
-      return "border-transparent bg-secondary text-secondary-foreground";
-    case TicketStatus.closed:
-      return "border-border bg-background text-muted-foreground";
-  }
-}
 
 function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   if (direction === "asc") {
@@ -151,7 +112,12 @@ export function TicketsTable({
         />
       ),
       cell: ({ row }) => (
-        <strong className="block text-sm text-card-foreground">{row.original.subject}</strong>
+        <Link
+          className={`block text-sm font-semibold ${appTextLinkClass}`}
+          to={`/tickets/${row.original.id}`}
+        >
+          {row.original.subject}
+        </Link>
       ),
     },
     {
@@ -187,9 +153,7 @@ export function TicketsTable({
         />
       ),
       cell: ({ row }) => (
-        <Badge className={getStatusClassName(row.original.status)} variant="outline">
-          {getStatusLabel(row.original.status)}
-        </Badge>
+        <TicketStatusBadge status={row.original.status} />
       ),
     },
     {
@@ -204,7 +168,7 @@ export function TicketsTable({
         />
       ),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{getCategoryLabel(row.original.category)}</span>
+        <span className="text-muted-foreground">{getTicketCategoryLabel(row.original.category)}</span>
       ),
     },
     {
@@ -221,7 +185,7 @@ export function TicketsTable({
         </div>
       ),
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatDate(row.original.createdAt)}</span>
+        <span className="text-muted-foreground">{formatTicketDate(row.original.createdAt)}</span>
       ),
       meta: {
         cellClassName: "text-right",

@@ -81,3 +81,24 @@ export type TicketListItem = {
   status: TicketStatus;
   subject: string;
 };
+
+export type TicketDetail = {
+  assignedUser: {
+    email: string;
+    id: string;
+    name: string;
+  } | null;
+  bodyText: string;
+  category: TicketCategory | null;
+  createdAt: string;
+  customer: {
+    email: string;
+    id: number;
+    name: string;
+  };
+  id: number;
+  source: string;
+  status: TicketStatus;
+  subject: string;
+  updatedAt: string;
+};

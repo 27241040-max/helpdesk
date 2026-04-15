@@ -1,5 +1,6 @@
 import { TicketCategory, TicketStatus, type TicketListItem, type TicketListMeta } from "core/email";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { apiClient } from "../lib/api-client";
@@ -256,6 +257,17 @@ function createTicketsResponse(
   };
 }
 
+function renderTicketsPage(initialEntries: string[] = ["/tickets"]) {
+  return renderWithQuery(
+    <MemoryRouter initialEntries={initialEntries}>
+      <Routes>
+        <Route element={<TicketsPage />} path="/tickets" />
+        <Route element={<div>detail page</div>} path="/tickets/:ticketId" />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe("TicketsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -264,7 +276,7 @@ describe("TicketsPage", () => {
   test("renders loading state before data resolves", () => {
     mockedApiClient.get.mockReturnValue(new Promise(() => undefined));
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(screen.getByText("工单列表")).toBeVisible();
     expect(screen.getByText("当前共 0 个工单，第 1 / 1 页")).toBeVisible();
@@ -273,7 +285,7 @@ describe("TicketsPage", () => {
   test("renders an error state when the request fails", async () => {
     mockedApiClient.get.mockRejectedValue(new Error("boom"));
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("工单列表加载失败，请稍后再试。");
     expect(screen.getByText("工单列表加载失败，请稍后再试。")).toBeVisible();
@@ -292,7 +304,7 @@ describe("TicketsPage", () => {
       },
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("暂无工单数据。");
     expect(screen.getByText("当前共 0 个工单，第 1 / 1 页")).toBeVisible();
@@ -301,7 +313,7 @@ describe("TicketsPage", () => {
   test("loads tickets with default createdAt desc sorting", async () => {
     mockedApiClient.get.mockResolvedValue(createTicketsResponse(ticketsBySortKey["createdAt:desc"]));
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
 
@@ -340,7 +352,7 @@ describe("TicketsPage", () => {
       return createTicketsResponse(ticketsBySortKey[`${sortBy}:${sortOrder}`] ?? []);
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
 
@@ -394,7 +406,7 @@ describe("TicketsPage", () => {
       return createTicketsResponse(ticketsBySortKey[`${sortBy}:${sortOrder}`] ?? []);
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
 
@@ -463,7 +475,7 @@ describe("TicketsPage", () => {
       return createTicketsResponse(ticketsBySortKey[`${sortBy}:${sortOrder}`] ?? []);
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
 
@@ -499,7 +511,7 @@ describe("TicketsPage", () => {
       });
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
 
@@ -574,7 +586,7 @@ describe("TicketsPage", () => {
       });
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
 
@@ -633,7 +645,7 @@ describe("TicketsPage", () => {
       });
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
     fireEvent.click(screen.getByRole("button", { name: ">" }));
@@ -708,7 +720,7 @@ describe("TicketsPage", () => {
       });
     });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     await screen.findByText("Newest ticket");
 
@@ -743,5 +755,16 @@ describe("TicketsPage", () => {
         },
       });
     });
+  });
+
+  test("navigates to the detail page when clicking the subject", async () => {
+    mockedApiClient.get.mockResolvedValue(createTicketsResponse(ticketsBySortKey["createdAt:desc"]));
+
+    renderTicketsPage();
+
+    const subjectLink = await screen.findByRole("link", { name: "Newest ticket" });
+    fireEvent.click(subjectLink);
+
+    await screen.findByText("detail page");
   });
 });
