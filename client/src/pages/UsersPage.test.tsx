@@ -1,3 +1,4 @@
+import { QueryClient } from "@tanstack/react-query";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -538,6 +539,62 @@ describe("UsersPage", () => {
 
     await screen.findByText("暂无用户数据。");
     expect(screen.queryByRole("heading", { name: "确认删除用户" })).not.toBeInTheDocument();
+  });
+
+  test("clears ticket-related caches after deleting a user", async () => {
+    mockedApiClient.get
+      .mockResolvedValueOnce({
+        data: {
+          users: [
+            {
+              id: "2",
+              name: "Agent User",
+              email: "agent@example.com",
+              role: "agent",
+              emailVerified: false,
+              createdAt: "2026-04-07T10:00:00.000Z",
+              updatedAt: "2026-04-07T12:00:00.000Z",
+            },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          users: [],
+        },
+      });
+    mockedApiClient.delete.mockResolvedValue({
+      data: {
+        success: true,
+      },
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+
+    queryClient.setQueryData(["ticket", "7"], {
+      assignedUser: { id: "2", name: "Agent User", email: "agent@example.com" },
+    });
+    queryClient.setQueryData(["ticket-assignable-agents"], {
+      agents: [{ id: "2", name: "Agent User", email: "agent@example.com" }],
+    });
+
+    renderWithQuery(<UsersPage />, { queryClient });
+
+    await screen.findByText("Agent User");
+
+    fireEvent.click(screen.getByRole("button", { name: "删除用户 Agent User" }));
+    fireEvent.click(screen.getByRole("button", { name: "确认删除" }));
+
+    await screen.findByText("暂无用户数据。");
+
+    expect(queryClient.getQueryData(["ticket", "7"])).toBeUndefined();
+    expect(queryClient.getQueryState(["ticket-assignable-agents"])?.isInvalidated).toBe(true);
   });
 
   test("shows delete error and keeps dialog open when deletion fails", async () => {

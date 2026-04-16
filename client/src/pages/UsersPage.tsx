@@ -139,7 +139,13 @@ export function UsersPage() {
     },
     onSuccess: async () => {
       setDel({ user: null });
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.removeQueries({ queryKey: ["ticket"] });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["users"] }),
+        queryClient.invalidateQueries({ queryKey: ["tickets"] }),
+        queryClient.invalidateQueries({ queryKey: ["ticket-assignable-agents"] }),
+      ]);
     },
     onError: (mutationError) => {
       setDel((current) => ({

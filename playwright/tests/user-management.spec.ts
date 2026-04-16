@@ -123,3 +123,33 @@ test("delete: admin can soft-delete a user from the list", async ({ page }) => {
   await expect(page.getByText(user.name)).toHaveCount(0);
   await expect(page.getByText(user.email)).toHaveCount(0);
 });
+
+test("create: admin can recreate a previously deleted user with the same email", async ({ page }) => {
+  const user = makeUser("recreate");
+
+  await ensureCredentialUser({
+    email: user.email,
+    password: user.password,
+    name: user.name,
+    role: "agent",
+  });
+
+  await openUsersAsAdmin(page);
+
+  await page.getByRole("button", { name: `删除用户 ${user.name}` }).click();
+  await expect(page.getByRole("heading", { name: "确认删除用户" })).toBeVisible();
+  await page.getByRole("button", { name: "确认删除" }).click();
+
+  await expect(page.getByRole("heading", { name: "确认删除用户" })).toHaveCount(0);
+  await expect(page.getByText(user.name)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "创建用户" }).click();
+  await page.getByLabel("姓名").fill(`${user.name} restored`);
+  await page.getByLabel("电子邮件").fill(user.email);
+  await page.getByLabel("密码").fill("restored123");
+  await page.getByRole("button", { name: "创建用户" }).click();
+
+  await expect(page.getByRole("heading", { name: "创建新用户" })).toHaveCount(0);
+  await expect(page.getByText(`${user.name} restored`)).toBeVisible();
+  await expect(page.getByText(user.email)).toBeVisible();
+});

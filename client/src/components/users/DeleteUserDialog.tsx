@@ -34,7 +34,7 @@ export function DeleteUserDialog({
         <DialogHeader>
           <DialogTitle>确认删除用户</DialogTitle>
           <DialogDescription>
-            删除后，用户 <strong>{name}</strong> 将从默认列表中隐藏，并立即失效。
+            删除后，用户 <strong>{name}</strong> 将从默认列表中隐藏并立即失效，已分配给该用户的工单会自动变为未指派。
           </DialogDescription>
         </DialogHeader>
 

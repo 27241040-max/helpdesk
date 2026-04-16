@@ -24,6 +24,7 @@ describe("DeleteUserDialog", () => {
 
     expect(screen.getByRole("heading", { name: "确认删除用户" })).toBeVisible();
     expect(screen.getByText("Agent User")).toBeVisible();
+    expect(screen.getByText(/已分配给该用户的工单会自动变为未指派/)).toBeVisible();
     expect(screen.getByRole("button", { name: "确认删除" })).toBeVisible();
     expect(screen.getByRole("button", { name: "取消" })).toBeVisible();
   });

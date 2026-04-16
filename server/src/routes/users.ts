@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+
+import { hashPassword } from "better-auth/crypto";
 import { createUserSchema, updateUserSchema } from "core/users";
 import { fromNodeHeaders } from "better-auth/node";
 import { Router } from "express";
@@ -83,11 +86,100 @@ usersRouter.post("/", async (req, res) => {
     return;
   }
 
+  const normalizedEmail = result.data.email.toLowerCase();
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      email: normalizedEmail,
+    },
+    select: {
+      id: true,
+      deletedAt: true,
+    },
+  });
+
+  if (existingUser && !existingUser.deletedAt) {
+    res.status(409).json({ error: "该邮箱已存在。" });
+    return;
+  }
+
+  if (existingUser?.deletedAt) {
+    const passwordHash = await hashPassword(result.data.password);
+    const existingCredentialAccount = await prisma.account.findFirst({
+      where: {
+        providerId: "credential",
+        userId: existingUser.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const restoredUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: {
+          id: existingUser.id,
+        },
+        data: {
+          banExpires: null,
+          banReason: null,
+          banned: false,
+          deletedAt: null,
+          deletedBy: null,
+          email: normalizedEmail,
+          emailVerified: false,
+          name: result.data.name,
+          role: UserRole.agent,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (existingCredentialAccount) {
+        await tx.account.update({
+          where: {
+            id: existingCredentialAccount.id,
+          },
+          data: {
+            password: passwordHash,
+          },
+        });
+      } else {
+        await tx.account.create({
+          data: {
+            id: randomUUID(),
+            accountId: existingUser.id,
+            providerId: "credential",
+            userId: existingUser.id,
+            password: passwordHash,
+          },
+        });
+      }
+
+      await tx.session.deleteMany({
+        where: {
+          userId: existingUser.id,
+        },
+      });
+
+      return user;
+    });
+
+    res.status(201).json({ user: restoredUser });
+    return;
+  }
+
   const created = await auth.api.createUser({
     headers: fromNodeHeaders(req.headers),
     body: {
       ...result.data,
-      email: result.data.email.toLowerCase(),
+      email: normalizedEmail,
       role: UserRole.agent,
     },
   });
@@ -211,6 +303,14 @@ usersRouter.delete("/:id", async (req, res) => {
   }
 
   await prisma.$transaction([
+    prisma.ticket.updateMany({
+      where: {
+        assignedUserId: userId,
+      },
+      data: {
+        assignedUserId: null,
+      },
+    }),
     prisma.user.update({
       where: {
         id: userId,
