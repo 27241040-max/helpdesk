@@ -8,6 +8,7 @@ import { toNodeHandler } from 'better-auth/node';
 
 import { auth } from './auth';
 import { isAllowedOrigin } from './config';
+import { startBoss, stopBoss } from "./jobs/boss";
 import { agentsRouter } from "./routes/agents";
 import { inboundEmailRouter } from "./routes/inbound-email";
 import { ticketsRouter } from "./routes/tickets";
@@ -76,6 +77,48 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
 
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+async function startServer() {
+  await startBoss();
+
+  const server = app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+
+  let isShuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (isShuttingDown) {
+      return;
+    }
+
+    isShuttingDown = true;
+    console.log(`Received ${signal}, shutting down server...`);
+
+    server.close(async (error) => {
+      if (error) {
+        console.error("HTTP server shutdown failed:", error);
+        process.exitCode = 1;
+      }
+
+      try {
+        await stopBoss();
+      } catch (bossError) {
+        console.error("pg-boss shutdown failed:", bossError);
+        process.exitCode = 1;
+      } finally {
+        process.exit();
+      }
+    });
+  };
+
+  process.on("SIGINT", () => {
+    void shutdown("SIGINT");
+  });
+  process.on("SIGTERM", () => {
+    void shutdown("SIGTERM");
+  });
+}
+
+void startServer().catch((error) => {
+  console.error("Server startup failed:", error);
+  process.exit(1);
 });

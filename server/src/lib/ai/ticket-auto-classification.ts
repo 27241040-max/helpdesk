@@ -2,8 +2,6 @@ import { TicketCategory } from "../../generated/prisma";
 import { prisma } from "../../prisma";
 import { classifyTicket } from "./classify-ticket";
 
-const autoClassificationDelayMs = 0;
-
 type TicketClassificationCandidate = {
   bodyText: string;
   category: TicketCategory | null;
@@ -55,14 +53,4 @@ export async function runTicketAutoClassification(ticketId: number): Promise<voi
       category,
     },
   });
-}
-
-export function scheduleTicketAutoClassification(ticketId: number): void {
-  setTimeout(async () => {
-    try {
-      await runTicketAutoClassification(ticketId);
-    } catch (error) {
-      console.error(`工单 ${ticketId} 自动分类失败:`, error);
-    }
-  }, autoClassificationDelayMs);
 }
