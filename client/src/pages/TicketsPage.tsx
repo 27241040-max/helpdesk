@@ -13,6 +13,7 @@ import { SearchIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 
 import { TicketsTable } from "@/components/tickets/TicketsTable";
+import { shouldPollForTicketAutoClassification } from "@/components/tickets/ticket-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,6 +112,8 @@ export function TicketsPage() {
       });
       return response.data;
     },
+    refetchInterval: (query) =>
+      query.state.data?.tickets.some(shouldPollForTicketAutoClassification) ? 3_000 : false,
   });
 
   if (isError) {

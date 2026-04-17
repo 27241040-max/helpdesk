@@ -9,6 +9,25 @@ export function formatTicketDate(value: string) {
   }).format(new Date(value));
 }
 
+const autoClassificationPollingWindowMs = 60_000;
+
+export function shouldPollForTicketAutoClassification(ticket: {
+  category: TicketCategory | null;
+  createdAt: string;
+}) {
+  if (ticket.category) {
+    return false;
+  }
+
+  const createdAt = new Date(ticket.createdAt).getTime();
+
+  if (Number.isNaN(createdAt)) {
+    return false;
+  }
+
+  return Date.now() - createdAt < autoClassificationPollingWindowMs;
+}
+
 export function getTicketCategoryLabel(category: TicketCategory | null) {
   if (!category) {
     return "未分类";

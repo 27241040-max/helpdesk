@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import { getOptionalEnv } from "../config";
 import { TicketCategory, TicketStatus } from "../generated/prisma";
+import { scheduleTicketAutoClassification } from "../lib/ai/ticket-auto-classification";
 import { getIssueMessage } from "../lib/validation";
 import { prisma } from "../prisma";
 
@@ -98,8 +99,13 @@ inboundEmailRouter.post("/", async (req, res) => {
     },
     select: {
       id: true,
+      category: true,
     },
   });
 
   res.status(201).json({ created: true, ticketId: ticket.id });
+
+  if (!ticket.category) {
+    scheduleTicketAutoClassification(ticket.id);
+  }
 });

@@ -16,6 +16,7 @@ import { Link, useParams } from "react-router";
 
 import { FormDetails } from "@/components/tickets/FormDetails";
 import { TicketDetailSkeleton } from "@/components/tickets/TicketDetailSkeleton";
+import { shouldPollForTicketAutoClassification } from "@/components/tickets/ticket-display";
 import { UpdateTicket } from "@/components/tickets/UpdateTicket";
 import { Button } from "@/components/ui/button";
 
@@ -101,6 +102,8 @@ export function TicketDetailPage() {
       const response = await apiClient.get<TicketDetail>(`/api/tickets/${ticketId}`);
       return response.data;
     },
+    refetchInterval: (query) =>
+      query.state.data && shouldPollForTicketAutoClassification(query.state.data) ? 3_000 : false,
   });
 
   const { data: agentsData } = useQuery({
