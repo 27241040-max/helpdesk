@@ -9,6 +9,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth';
 import { isAllowedOrigin } from './config';
 import { startBoss, stopBoss } from "./jobs/boss";
+import { ensureAiAgentUser } from "./lib/ai-agent";
 import { agentsRouter } from "./routes/agents";
 import { inboundEmailRouter } from "./routes/inbound-email";
 import { ticketsRouter } from "./routes/tickets";
@@ -78,6 +79,7 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
 app.use(errorHandler);
 
 async function startServer() {
+  await ensureAiAgentUser();
   await startBoss();
 
   const server = app.listen(port, () => {

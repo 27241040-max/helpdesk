@@ -200,6 +200,45 @@ describe("TicketDetailPage", () => {
     expect(screen.getByText("暂无回复")).toBeVisible();
   });
 
+  test("renders the AI agent as a visible assignee", async () => {
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        return {
+          data: {
+            ...ticketDetail,
+            assignedUser: {
+              email: "ai-agent@system.local",
+              id: "ai-agent-id",
+              name: "AI agent",
+            },
+          } satisfies TicketDetail,
+        };
+      }
+
+      if (url === "/api/agents") {
+        return {
+          data: {
+            agents: [
+              ...agents,
+              {
+                id: "ai-agent-id",
+                name: "AI agent",
+                email: "ai-agent@system.local",
+              },
+            ],
+          },
+        };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
+
+    renderTicketDetailPage();
+
+    await screen.findByText("Refund request follow-up");
+    expect(screen.getByRole("combobox", { name: "指派给" })).toHaveTextContent("AI agent");
+  });
+
   test("assigns the ticket to a different agent", async () => {
     mockedApiClient.get.mockImplementation(async (url) => {
       if (url === "/api/tickets/7") {

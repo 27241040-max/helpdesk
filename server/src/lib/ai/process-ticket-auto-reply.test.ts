@@ -4,6 +4,7 @@ const {
   prismaMock,
   readKnowledgeBaseMarkdownMock,
   resolveTicketWithKnowledgeBaseMock,
+  getAiAgentUserOrThrowMock,
 } = vi.hoisted(() => {
   const tx = {
     ticket: {
@@ -26,6 +27,7 @@ const {
     },
     readKnowledgeBaseMarkdownMock: vi.fn(),
     resolveTicketWithKnowledgeBaseMock: vi.fn(),
+    getAiAgentUserOrThrowMock: vi.fn(),
   };
 });
 
@@ -38,10 +40,15 @@ vi.mock("./resolve-ticket-with-knowledge-base", () => ({
   resolveTicketWithKnowledgeBase: resolveTicketWithKnowledgeBaseMock,
 }));
 
+vi.mock("../ai-agent", () => ({
+  getAiAgentUserOrThrow: getAiAgentUserOrThrowMock,
+}));
+
 import { TicketReplySource, TicketStatus } from "../../generated/prisma";
 import { processTicketAutoReply } from "./process-ticket-auto-reply";
 
 const processingTicket = {
+  assignedUserId: "ai-agent-id",
   bodyText: "我想知道如何下载之前订单的发票。",
   category: null,
   customer: {
@@ -57,6 +64,11 @@ const processingTicket = {
 describe("processTicketAutoReply", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getAiAgentUserOrThrowMock.mockResolvedValue({
+      email: "ai-agent@system.local",
+      id: "ai-agent-id",
+      name: "AI agent",
+    });
     prismaMock.ticket.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.ticket.findUnique.mockResolvedValue(processingTicket);
     prismaMock.__tx.ticket.updateMany.mockResolvedValue({ count: 1 });
@@ -90,6 +102,7 @@ describe("processTicketAutoReply", () => {
         status: TicketStatus.processing,
       },
       data: {
+        resolvedAt: expect.any(Date),
         status: TicketStatus.resolved,
       },
     });
@@ -116,6 +129,20 @@ describe("processTicketAutoReply", () => {
 
     expect(prismaMock.__tx.ticket.updateMany).toHaveBeenCalledWith({
       where: {
+        assignedUserId: "ai-agent-id",
+        id: 7,
+        status: TicketStatus.processing,
+      },
+      data: {
+        assignedUserId: null,
+        status: TicketStatus.open,
+      },
+    });
+    expect(prismaMock.__tx.ticket.updateMany).toHaveBeenCalledWith({
+      where: {
+        assignedUserId: {
+          not: "ai-agent-id",
+        },
         id: 7,
         status: TicketStatus.processing,
       },
@@ -133,6 +160,37 @@ describe("processTicketAutoReply", () => {
 
     expect(prismaMock.__tx.ticket.updateMany).toHaveBeenCalledWith({
       where: {
+        assignedUserId: "ai-agent-id",
+        id: 7,
+        status: TicketStatus.processing,
+      },
+      data: {
+        assignedUserId: null,
+        status: TicketStatus.open,
+      },
+    });
+    expect(prismaMock.__tx.ticketReply.create).not.toHaveBeenCalled();
+  });
+
+  test("keeps a manual assignee when the ticket cannot be auto-resolved", async () => {
+    prismaMock.ticket.findUnique.mockResolvedValue({
+      ...processingTicket,
+      assignedUserId: "manual-agent-id",
+    });
+    readKnowledgeBaseMarkdownMock.mockResolvedValue("# kb");
+    resolveTicketWithKnowledgeBaseMock.mockResolvedValue({
+      category: "technical",
+      replyBodyText: null,
+      shouldResolve: false,
+    });
+
+    await processTicketAutoReply(7);
+
+    expect(prismaMock.__tx.ticket.updateMany).toHaveBeenCalledWith({
+      where: {
+        assignedUserId: {
+          not: "ai-agent-id",
+        },
         id: 7,
         status: TicketStatus.processing,
       },
@@ -140,7 +198,6 @@ describe("processTicketAutoReply", () => {
         status: TicketStatus.open,
       },
     });
-    expect(prismaMock.__tx.ticketReply.create).not.toHaveBeenCalled();
   });
 
   test("skips processing when the ticket is no longer new", async () => {

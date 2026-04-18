@@ -94,6 +94,18 @@ export type TicketSummaryResult = {
   bodyText: string;
   generatedAt: string;
 };
+export type TicketDashboardStats = {
+  aiResolvedPercentage: number;
+  aiResolvedTickets: number;
+  averageResolutionMs: number | null;
+  openTickets: number;
+  resolvedTickets: number;
+  ticketVolumeByDay: Array<{
+    date: string;
+    totalTickets: number;
+  }>;
+  totalTickets: number;
+};
 export type TicketListMeta = {
   page: number;
   pageSize: number;

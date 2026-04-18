@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { UserRole, type CreateUserInput, type UpdateUserInput } from "core/users";
+import { UserRole, type CreateUserInput, type UpdateUserInput, type UserListItem } from "core/users";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
 import { DeleteUserDialog } from "@/components/users/DeleteUserDialog";
 import { UserFormDialog } from "@/components/users/UserFormDialog";
-import { UsersTable, type UserListItem } from "@/components/users/UsersTable";
+import { UsersTable } from "@/components/users/UsersTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -179,11 +179,15 @@ export function UsersPage() {
   };
 
   const handleEditClick = (user: UserListItem) => {
+    if (user.isSystemReserved) {
+      return;
+    }
+
     setDialog({ mode: "edit", user });
   };
 
   const handleDeleteClick = (user: UserListItem) => {
-    if (user.role === UserRole.admin) {
+    if (user.role === UserRole.admin || user.isSystemReserved) {
       return;
     }
 

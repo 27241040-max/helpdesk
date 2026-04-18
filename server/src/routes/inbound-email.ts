@@ -2,6 +2,7 @@ import { inboundEmailSchema, type InboundEmailInput } from "core/email";
 import { Router } from "express";
 
 import { getOptionalEnv } from "../config";
+import { getAiAgentUserOrThrow } from "../lib/ai-agent";
 import { TicketCategory, TicketStatus } from "../generated/prisma";
 import { queueTicketAutoClassification } from "../jobs/boss";
 import { getIssueMessage } from "../lib/validation";
@@ -86,9 +87,11 @@ inboundEmailRouter.post("/", async (req, res) => {
           name: result.data.from.name,
         },
       });
+  const aiAgent = await getAiAgentUserOrThrow();
 
   const ticket = await prisma.ticket.create({
     data: {
+      assignedUserId: aiAgent.id,
       bodyText: result.data.text,
       category: normalizeCategory(result.data.category),
       customerId: customer.id,

@@ -65,6 +65,7 @@ usersRouter.get("/", async (req, res) => {
       id: true,
       name: true,
       email: true,
+      isSystemReserved: true,
       role: true,
       emailVerified: true,
       createdAt: true,
@@ -127,6 +128,7 @@ usersRouter.post("/", async (req, res) => {
           deletedBy: null,
           email: normalizedEmail,
           emailVerified: false,
+          isSystemReserved: false,
           name: result.data.name,
           role: UserRole.agent,
         },
@@ -134,6 +136,7 @@ usersRouter.post("/", async (req, res) => {
           id: true,
           name: true,
           email: true,
+          isSystemReserved: true,
           role: true,
           emailVerified: true,
           createdAt: true,
@@ -189,6 +192,7 @@ usersRouter.post("/", async (req, res) => {
       id: created.user.id,
       name: created.user.name,
       email: created.user.email,
+      isSystemReserved: false,
       role: created.user.role,
       emailVerified: created.user.emailVerified,
       createdAt: created.user.createdAt,
@@ -207,6 +211,26 @@ usersRouter.patch("/:id", async (req, res) => {
 
   const userId = req.params.id;
   const normalizedEmail = result.data.email.toLowerCase();
+  const userToUpdate = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      id: true,
+      isSystemReserved: true,
+    },
+  });
+
+  if (!userToUpdate) {
+    res.status(404).json({ error: "用户不存在。" });
+    return;
+  }
+
+  if (userToUpdate.isSystemReserved) {
+    res.status(403).json({ error: "系统保留账号不能被编辑。" });
+    return;
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: {
       email: normalizedEmail,
@@ -264,6 +288,7 @@ usersRouter.patch("/:id", async (req, res) => {
       id: true,
       name: true,
       email: true,
+      isSystemReserved: true,
       role: true,
       emailVerified: true,
       createdAt: true,
@@ -282,6 +307,7 @@ usersRouter.delete("/:id", async (req, res) => {
     },
     select: {
       id: true,
+      isSystemReserved: true,
       role: true,
       deletedAt: true,
     },
@@ -299,6 +325,11 @@ usersRouter.delete("/:id", async (req, res) => {
 
   if (user.role === UserRole.admin) {
     res.status(403).json({ error: "管理员用户不能被删除。" });
+    return;
+  }
+
+  if (user.isSystemReserved) {
+    res.status(403).json({ error: "系统保留账号不能被删除。" });
     return;
   }
 

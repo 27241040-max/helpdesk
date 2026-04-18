@@ -13,6 +13,8 @@ import { Prisma, TicketStatus as PrismaTicketStatus } from "../generated/prisma"
 import { polishTicketReply } from "../lib/ai/polish-ticket-reply";
 import { summarizeTicketThread } from "../lib/ai/summarize-ticket-thread";
 import { parsePositiveIntParam } from "../lib/route-params";
+import { getResolvedAtForStatusTransition } from "../lib/ticket-status";
+import { getTicketDashboardStats } from "../lib/ticket-stats";
 import { getIssueMessage } from "../lib/validation";
 
 import { requireAuth } from "../middleware/require-auth";
@@ -197,6 +199,11 @@ ticketsRouter.get("/", async (req, res) => {
   });
 });
 
+ticketsRouter.get("/stats", async (_req, res) => {
+  const stats = await getTicketDashboardStats();
+  res.json(stats);
+});
+
 ticketsRouter.get("/:id", async (req, res) => {
   const ticketId = parsePositiveIntParam(req.params.id);
 
@@ -235,7 +242,11 @@ ticketsRouter.patch("/:id", async (req, res) => {
 
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
-    select: { id: true },
+    select: {
+      id: true,
+      resolvedAt: true,
+      status: true,
+    },
   });
 
   if (!ticket) {
@@ -247,6 +258,11 @@ ticketsRouter.patch("/:id", async (req, res) => {
     where: { id: ticketId },
     data: {
       category: result.data.category,
+      resolvedAt: getResolvedAtForStatusTransition(
+        ticket.status,
+        result.data.status as PrismaTicketStatus,
+        ticket.resolvedAt,
+      ),
       status: result.data.status as PrismaTicketStatus,
     },
     select: ticketDetailSelect,

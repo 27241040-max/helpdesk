@@ -1,4 +1,4 @@
-import { UserRole, type UserRole as UserRoleValue } from "core/users";
+import { UserRole, type UserListItem } from "core/users";
 import { PencilIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,16 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-export type UserListItem = {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRoleValue;
-  emailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
 
 type UsersTableProps = {
   onDelete: (user: UserListItem) => void;
@@ -60,7 +50,15 @@ export function UsersTable({ onDelete, onEdit, users }: UsersTableProps) {
         {users.map((user) => (
           <TableRow className="border-b border-border/60 hover:bg-transparent" key={user.id}>
             <TableCell className="align-top">
-              <strong className="block text-sm text-card-foreground">{user.name}</strong>
+              <div className="flex flex-wrap items-center gap-2">
+                <strong className="block text-sm text-card-foreground">{user.name}</strong>
+                {user.isSystemReserved ? (
+                  <>
+                    <Badge variant="outline">System</Badge>
+                    <Badge variant="outline">Reserved</Badge>
+                  </>
+                ) : null}
+              </div>
               <span className="mt-1 block text-sm text-muted-foreground">{user.email}</span>
             </TableCell>
             <TableCell className="align-top">
@@ -83,29 +81,33 @@ export function UsersTable({ onDelete, onEdit, users }: UsersTableProps) {
               {formatDate(user.updatedAt)}
             </TableCell>
             <TableCell className="align-top text-right">
-              <div className="flex justify-end gap-1">
-                <Button
-                  aria-label={`编辑用户 ${user.name}`}
-                  className="text-muted-foreground hover:text-foreground"
-                  onClick={() => onEdit(user)}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <PencilIcon className="size-4" />
-                </Button>
-                <Button
-                  aria-label={`删除用户 ${user.name}`}
-                  className="text-muted-foreground hover:text-destructive"
-                  disabled={user.role === UserRole.admin}
-                  onClick={() => onDelete(user)}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <Trash2Icon className="size-4" />
-                </Button>
-              </div>
+              {user.isSystemReserved ? (
+                <span className="text-sm text-muted-foreground">系统保留账号</span>
+              ) : (
+                <div className="flex justify-end gap-1">
+                  <Button
+                    aria-label={`编辑用户 ${user.name}`}
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => onEdit(user)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <PencilIcon className="size-4" />
+                  </Button>
+                  <Button
+                    aria-label={`删除用户 ${user.name}`}
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={user.role === UserRole.admin}
+                    onClick={() => onDelete(user)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2Icon className="size-4" />
+                  </Button>
+                </div>
+              )}
             </TableCell>
           </TableRow>
         ))}

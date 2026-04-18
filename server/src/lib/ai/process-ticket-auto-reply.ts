@@ -1,8 +1,10 @@
 import { TicketCategory, TicketReplySource, TicketStatus } from "../../generated/prisma";
 import { prisma } from "../../prisma";
+import { getAiAgentUserOrThrow } from "../ai-agent";
 import { readKnowledgeBaseMarkdown, resolveTicketWithKnowledgeBase } from "./resolve-ticket-with-knowledge-base";
 
 type TicketAutoReplyCandidate = {
+  assignedUserId: string | null;
   bodyText: string;
   category: TicketCategory | null;
   customer: {
@@ -23,6 +25,7 @@ async function getTicketAutoReplyCandidate(ticketId: number): Promise<TicketAuto
     where: { id: ticketId },
     select: {
       id: true,
+      assignedUserId: true,
       subject: true,
       bodyText: true,
       category: true,
@@ -59,10 +62,27 @@ async function updateCategoryIfMissing(
 }
 
 async function finalizeTicketAsOpen(ticketId: number, category?: TicketCategory | null) {
+  const aiAgent = await getAiAgentUserOrThrow();
+
   await prisma.$transaction(async (tx) => {
     await updateCategoryIfMissing(ticketId, category, tx);
     await tx.ticket.updateMany({
       where: {
+        assignedUserId: aiAgent.id,
+        id: ticketId,
+        status: TicketStatus.processing,
+      },
+      data: {
+        assignedUserId: null,
+        status: TicketStatus.open,
+      },
+    });
+
+    await tx.ticket.updateMany({
+      where: {
+        assignedUserId: {
+          not: aiAgent.id,
+        },
         id: ticketId,
         status: TicketStatus.processing,
       },
@@ -87,6 +107,7 @@ async function finalizeTicketAsResolved(
         status: TicketStatus.processing,
       },
       data: {
+        resolvedAt: new Date(),
         status: TicketStatus.resolved,
       },
     });

@@ -35,3 +35,13 @@ export const updateUserSchema = z.object({
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UserListItem = {
+  createdAt: string;
+  email: string;
+  emailVerified: boolean;
+  id: string;
+  isSystemReserved: boolean;
+  name: string;
+  role: UserRole;
+  updatedAt: string;
+};

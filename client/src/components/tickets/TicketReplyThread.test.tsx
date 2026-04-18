@@ -12,7 +12,8 @@ const replies: TicketReply[] = [
       id: "user_1",
       name: "Agent Smith",
     },
-    bodyText: "We have reviewed your request and will send a follow-up shortly.",
+    bodyText:
+      "We have reviewed your request and will send a follow-up shortly.",
     createdAt: "2026-04-14T10:00:00.000Z",
     id: 101,
     source: "agent",
@@ -50,9 +51,13 @@ describe("TicketReplyThread", () => {
     expect(screen.getByText("Taylor Agent")).toBeVisible();
     expect(screen.getByText("taylor.agent@example.com")).toBeVisible();
     expect(
-      screen.getByText("We have reviewed your request and will send a follow-up shortly."),
+      screen.getByText(
+        "We have reviewed your request and will send a follow-up shortly.",
+      ),
     ).toBeVisible();
-    expect(screen.getByText("The issue has been escalated to our billing team.")).toBeVisible();
+    expect(
+      screen.getByText("The issue has been escalated to our billing team."),
+    ).toBeVisible();
   });
 
   test("preserves line breaks in reply body text", () => {
@@ -72,7 +77,9 @@ describe("TicketReplyThread", () => {
 
     render(<TicketReplyThread replies={[multilineReply]} />);
 
-    const multilineBody = screen.getByText((_, node) => node?.textContent === "Line one\nLine two");
+    const multilineBody = screen.getByText(
+      (_, node) => node?.textContent === "Line one\nLine two",
+    );
 
     expect(multilineBody).toHaveClass("whitespace-pre-wrap");
   });

@@ -101,6 +101,35 @@ describe("UsersPage", () => {
     });
   });
 
+  test("shows system reserved users as read-only without edit or delete actions", async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        users: [
+          {
+            id: "ai-agent-id",
+            name: "AI agent",
+            email: "ai-agent@system.local",
+            role: "agent",
+            isSystemReserved: true,
+            emailVerified: true,
+            createdAt: "2026-04-08T10:00:00.000Z",
+            updatedAt: "2026-04-08T12:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    renderWithQuery(<UsersPage />);
+
+    await screen.findByText("AI agent");
+
+    expect(screen.getByText("System")).toBeVisible();
+    expect(screen.getByText("Reserved")).toBeVisible();
+    expect(screen.getByText("系统保留账号")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "编辑用户 AI agent" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "删除用户 AI agent" })).not.toBeInTheDocument();
+  });
+
   test("shows the create user dialog when the button is clicked", async () => {
     mockedApiClient.get.mockResolvedValue({
       data: {
