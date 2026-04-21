@@ -1,8 +1,8 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK",
-    "buildCommand": "npm run build --workspace core && npm run build --workspace client && npm run build --workspace server"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile.backend"
   },
   "deploy": {
     "preDeployCommand": [

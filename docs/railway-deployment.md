@@ -11,7 +11,8 @@
 
 仓库根目录的 `railway.json` 已经为单服务部署写好默认配置：
 
-- Build Command：`npm run build --workspace core && npm run build --workspace client && npm run build --workspace server`
+- Builder：`DOCKERFILE`
+- Dockerfile Path：`Dockerfile.backend`
 - Pre-deploy Command：`npm run prisma:migrate:deploy --workspace server`
 - Start Command：`npm run start --workspace server`
 - Health Check：`/api/health`
