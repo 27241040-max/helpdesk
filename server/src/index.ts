@@ -101,12 +101,19 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
 app.use(errorHandler);
 
 async function startServer() {
-  await ensureAiAgentUser();
-  await startBoss();
-
   const server = app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });
+
+  void (async () => {
+    try {
+      await ensureAiAgentUser();
+      await startBoss();
+    } catch (error) {
+      console.error("Background startup failed:", error);
+      Sentry.captureException(error);
+    }
+  })();
 
   let isShuttingDown = false;
   const shutdown = async (signal: string) => {
