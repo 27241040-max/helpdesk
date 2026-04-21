@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/node";
 import express from 'express';
 import cors from 'cors';
 
-import { isAllowedOrigin } from './config';
+import { getTrustedOriginsForRequest, isAllowedOrigin } from './config';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -27,16 +27,24 @@ process.on("uncaughtException", (error) => {
   Sentry.captureException(error);
 });
 
-const apiCors = cors({
-  origin(origin, callback) {
-    if (isAllowedOrigin(origin)) {
-      callback(null, true);
-      return;
-    }
+const apiCors = cors((req, callback) => {
+  callback(null, {
+    origin(origin, originCallback) {
+      const requestTrustedOrigins = getTrustedOriginsForRequest(
+        new Request(`http://${req.headers.host ?? "localhost"}/`, {
+          headers: req.headers as HeadersInit,
+        }),
+      );
 
-    callback(new Error(`Origin ${origin ?? 'unknown'} is not allowed by CORS`));
-  },
-  credentials: true,
+      if (!origin || isAllowedOrigin(origin) || requestTrustedOrigins.includes(origin.replace(/\/$/, ""))) {
+        originCallback(null, true);
+        return;
+      }
+
+      originCallback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
+    credentials: true,
+  });
 });
 
 app.use("/api", apiCors);
