@@ -160,6 +160,7 @@ export function UsersPage() {
   }
 
   const users = data?.users ?? [];
+  const visibleUsers = users.filter((user) => !user.isSystemReserved);
   const isUserFormOpen = dialog.mode !== null;
   const isUserFormSubmitting =
     dialog.mode === "edit" ? updateUserMutation.isPending : createUserMutation.isPending;
@@ -253,7 +254,7 @@ export function UsersPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-foreground">用户列表</h3>
-                <p className="mt-1 text-sm text-muted-foreground">当前共 {users.length} 个用户</p>
+                <p className="mt-1 text-sm text-muted-foreground">当前共 {visibleUsers.length} 个用户</p>
               </div>
               <Button className="min-w-32" onClick={handleCreateClick} type="button">
                 <PlusIcon className="size-4" />
@@ -267,13 +268,13 @@ export function UsersPage() {
               <div className="border-t border-border/70 pt-4 text-sm text-destructive">
                 用户列表加载失败，请稍后再试。
               </div>
-            ) : users.length === 0 ? (
+            ) : visibleUsers.length === 0 ? (
               <div className="border-t border-border/70 pt-4 text-sm text-muted-foreground">
                 暂无用户数据。
               </div>
             ) : (
               <div className="overflow-hidden rounded-[26px] border border-border/75 bg-background/72">
-                <UsersTable onDelete={handleDeleteClick} onEdit={handleEditClick} users={users} />
+                <UsersTable onDelete={handleDeleteClick} onEdit={handleEditClick} users={visibleUsers} />
               </div>
             )}
           </div>
