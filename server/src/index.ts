@@ -7,23 +7,15 @@ import path from "node:path";
 import * as Sentry from "@sentry/node";
 import express from 'express';
 import cors from 'cors';
-import { APIError } from "better-call";
-import { toNodeHandler } from 'better-auth/node';
 
-import { auth } from './auth';
 import { isAllowedOrigin } from './config';
-import { startBoss, stopBoss } from "./jobs/boss";
-import { ensureAiAgentUser } from "./lib/ai-agent";
-import { agentsRouter } from "./routes/agents";
-import { inboundEmailRouter } from "./routes/inbound-email";
-import { ticketsRouter } from "./routes/tickets";
-import { requireAuth } from './middleware/require-auth';
-import { usersRouter } from "./routes/users";
 
 const app = express();
 const port = process.env.PORT || 4000;
 const clientDistPath = path.resolve(__dirname, "../../client/dist");
 const clientIndexPath = path.join(clientDistPath, "index.html");
+let appStatus: "initializing" | "ready" | "degraded" = "initializing";
+let stopBossRef: (() => Promise<void>) | undefined;
 
 app.use(
   cors({
@@ -38,22 +30,11 @@ app.use(
     credentials: true,
   }),
 );
-app.all('/api/auth/*splat', toNodeHandler(auth));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'ticket-management-system' });
+  res.json({ status: 'ok', service: 'ticket-management-system', app: appStatus });
 });
-
-app.get('/api/me', requireAuth, (req, res) => {
-  res.json({ user: req.user });
-});
-
-app.use("/api/agents", agentsRouter);
-app.use("/api/inbound/email", inboundEmailRouter);
-app.use("/api/webhooks/inbound-email", inboundEmailRouter);
-app.use("/api/tickets", ticketsRouter);
-app.use("/api/users", usersRouter);
 
 if (existsSync(clientIndexPath)) {
   app.use(express.static(clientDistPath));
@@ -68,7 +49,20 @@ if (existsSync(clientIndexPath)) {
   });
 }
 
-Sentry.setupExpressErrorHandler(app);
+function isBetterAuthApiError(error: unknown): error is {
+  body?: {
+    code?: unknown;
+    message?: unknown;
+  };
+  status?: unknown;
+} {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "status" in error &&
+      "body" in error,
+  );
+}
 
 const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   if (res.headersSent) {
@@ -76,14 +70,16 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     return;
   }
 
-  if (error instanceof APIError) {
+  if (isBetterAuthApiError(error)) {
     if (error.status === 400 && error.body?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
       res.status(409).json({ error: "该邮箱已存在。" });
       return;
     }
 
     const statusCode = typeof error.status === "number" ? error.status : Number(error.status) || 500;
-    res.status(statusCode).json({ error: error.body?.message ?? "创建用户失败。" });
+    res.status(statusCode).json({
+      error: typeof error.body?.message === "string" ? error.body.message : "创建用户失败。",
+    });
     return;
   }
 
@@ -98,7 +94,49 @@ const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
   res.status(status).json({ error: message });
 };
 
-app.use(errorHandler);
+async function registerApplicationRoutes() {
+  const [
+    { toNodeHandler },
+    { auth },
+    { startBoss, stopBoss },
+    { ensureAiAgentUser },
+    { agentsRouter },
+    { inboundEmailRouter },
+    { ticketsRouter },
+    { requireAuth },
+    { usersRouter },
+  ] = await Promise.all([
+    import("better-auth/node"),
+    import("./auth"),
+    import("./jobs/boss"),
+    import("./lib/ai-agent"),
+    import("./routes/agents"),
+    import("./routes/inbound-email"),
+    import("./routes/tickets"),
+    import("./middleware/require-auth"),
+    import("./routes/users"),
+  ]);
+
+  stopBossRef = stopBoss;
+
+  app.all('/api/auth/*splat', toNodeHandler(auth));
+  app.get('/api/me', requireAuth, (req, res) => {
+    res.json({ user: req.user });
+  });
+
+  app.use("/api/agents", agentsRouter);
+  app.use("/api/inbound/email", inboundEmailRouter);
+  app.use("/api/webhooks/inbound-email", inboundEmailRouter);
+  app.use("/api/tickets", ticketsRouter);
+  app.use("/api/users", usersRouter);
+
+  Sentry.setupExpressErrorHandler(app);
+  app.use(errorHandler);
+
+  await ensureAiAgentUser();
+  await startBoss();
+  appStatus = "ready";
+}
 
 async function startServer() {
   const server = app.listen(port, () => {
@@ -107,10 +145,10 @@ async function startServer() {
 
   void (async () => {
     try {
-      await ensureAiAgentUser();
-      await startBoss();
+      await registerApplicationRoutes();
     } catch (error) {
-      console.error("Background startup failed:", error);
+      appStatus = "degraded";
+      console.error("Application startup failed:", error);
       Sentry.captureException(error);
     }
   })();
@@ -131,7 +169,7 @@ async function startServer() {
       }
 
       try {
-        await stopBoss();
+        await stopBossRef?.();
       } catch (bossError) {
         console.error("pg-boss shutdown failed:", bossError);
         process.exitCode = 1;
