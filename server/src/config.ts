@@ -8,8 +8,8 @@ function normalizeOrigins(rawOrigins: string | undefined): string[] {
 
   return rawOrigins
     .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+    .map((origin) => normalizePublicUrl(origin))
+    .filter((origin): origin is string => Boolean(origin));
 }
 
 function normalizePublicUrl(value: string | undefined): string | undefined {
@@ -57,16 +57,18 @@ export const trustedOrigins = isDevelopment
   : origins;
 
 export function isAllowedOrigin(origin: string | undefined): boolean {
-  if (!origin) {
+  const normalizedOrigin = normalizePublicUrl(origin);
+
+  if (!normalizedOrigin) {
     return true;
   }
 
-  if (trustedOrigins.includes(origin)) {
+  if (trustedOrigins.includes(normalizedOrigin)) {
     return true;
   }
 
   try {
-    const { protocol, hostname } = new URL(origin);
+    const { protocol, hostname } = new URL(normalizedOrigin);
     return isDevelopment && protocol === "http:" && LOCALHOST_HOSTS.has(hostname);
   } catch {
     return false;

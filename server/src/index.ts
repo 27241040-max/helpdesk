@@ -40,7 +40,6 @@ const apiCors = cors({
 });
 
 app.use("/api", apiCors);
-app.use(express.json());
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'ticket-management-system', app: appStatus });
@@ -130,6 +129,8 @@ async function registerApplicationRoutes() {
   stopBossRef = stopBoss;
 
   app.all('/api/auth/*splat', toNodeHandler(auth));
+  app.use("/api", express.json());
+
   app.get('/api/me', requireAuth, (req, res) => {
     res.json({ user: req.user });
   });
