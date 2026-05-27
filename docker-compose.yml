@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: ai-ticket-db
     environment:
       POSTGRES_DB: helpdesk
@@ -35,6 +35,9 @@ services:
       ADMIN_PASSWORD: qwerdf66
       ADMIN_NAME: Administrator
       AI_SDK_LOG_WARNINGS: "false"
+      JINA_API_KEY: ""
+      JINA_EMBEDDING_MODEL: jina-embeddings-v5-text-small
+      JINA_EMBEDDING_DIMENSIONS: "1024"
       SENTRY_DSN: ""
       SENTRY_ENVIRONMENT: docker-local
       SENTRY_RELEASE: ""

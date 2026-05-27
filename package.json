@@ -19,7 +19,8 @@
     "playwright:test:ui": "playwright test --ui",
     "playwright:db:setup": "node scripts/playwright-db.mjs setup",
     "playwright:db:push": "node scripts/playwright-db.mjs push",
-    "playwright:db:seed": "node scripts/playwright-db.mjs seed"
+    "playwright:db:seed": "node scripts/playwright-db.mjs seed",
+    "railway:predeploy": "npm run prisma:migrate:deploy --workspace server && npm run prisma:seed --workspace server && npm run knowledge-base:import --workspace server"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

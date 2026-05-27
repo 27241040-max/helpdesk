@@ -16,6 +16,10 @@
     "./users": {
       "types": "./dist/users.d.ts",
       "default": "./dist/users.js"
+    },
+    "./knowledge-base": {
+      "types": "./dist/knowledge-base.d.ts",
+      "default": "./dist/knowledge-base.js"
     }
   },
   "files": [

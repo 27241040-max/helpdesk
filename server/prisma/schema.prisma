@@ -83,6 +83,34 @@ model TicketReply {
   @@map("ticket_reply")
 }
 
+model KnowledgeBaseEntry {
+  id        Int                  @id @default(autoincrement())
+  title     String
+  bodyText  String
+  isEnabled Boolean              @default(true)
+  chunks    KnowledgeBaseChunk[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([isEnabled])
+  @@map("knowledge_base_entry")
+}
+
+model KnowledgeBaseChunk {
+  id        Int                @id @default(autoincrement())
+  entryId   Int
+  content   String
+  chunkIndex Int
+  embedding Unsupported("vector(1024)")
+  entry     KnowledgeBaseEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@unique([entryId, chunkIndex])
+  @@index([entryId])
+  @@map("knowledge_base_chunk")
+}
+
 model User {
   id            String    @id
   name          String

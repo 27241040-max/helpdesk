@@ -2,7 +2,11 @@ import { TicketCategory, TicketReplySource, TicketStatus } from "../../generated
 import { prisma } from "../../prisma";
 import { getAiAgentUserOrThrow } from "../ai-agent";
 import { sendTicketReplyEmail } from "../ticket-email";
-import { readKnowledgeBaseMarkdown, resolveTicketWithKnowledgeBase } from "./resolve-ticket-with-knowledge-base";
+import {
+  formatKnowledgeBaseSourcesAsMarkdown,
+  retrieveKnowledgeBaseSources,
+} from "./knowledge-base-retrieval";
+import { resolveTicketWithKnowledgeBase } from "./resolve-ticket-with-knowledge-base";
 
 type TicketAutoReplyCandidate = {
   assignedUserId: string | null;
@@ -165,7 +169,16 @@ export async function processTicketAutoReply(ticketId: number): Promise<void> {
   }
 
   try {
-    const knowledgeBaseMarkdown = await readKnowledgeBaseMarkdown();
+    const sources = await retrieveKnowledgeBaseSources(
+      [`工单主题: ${ticket.subject}`, `客户消息:\n${ticket.bodyText}`].join("\n\n"),
+    );
+
+    if (sources.length === 0) {
+      await finalizeTicketAsOpen(ticketId, ticket.category);
+      return;
+    }
+
+    const knowledgeBaseMarkdown = formatKnowledgeBaseSourcesAsMarkdown(sources);
     const result = await resolveTicketWithKnowledgeBase(ticket, knowledgeBaseMarkdown);
 
     if (result.shouldResolve && result.replyBodyText) {
