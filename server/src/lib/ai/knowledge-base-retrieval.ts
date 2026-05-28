@@ -3,8 +3,8 @@ import { prisma } from "../../prisma";
 import { createJinaEmbeddings, vectorToSql } from "./jina-embeddings";
 
 const maxChunkCharacters = 1200;
-const maxRetrievedChunks = 5;
-const maxCosineDistance = 0.45;
+const maxRetrievedChunks = 8;
+const maxCosineDistance = 0.62;
 
 type KnowledgeBaseSearchRow = {
   content: string;
