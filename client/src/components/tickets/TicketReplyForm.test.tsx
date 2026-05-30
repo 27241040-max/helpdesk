@@ -113,7 +113,7 @@ describe("TicketReplyForm", () => {
     fireEvent.change(screen.getByLabelText("回复内容"), {
       target: { value: "looking into this now" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Polish" }));
+    fireEvent.click(screen.getByRole("button", { name: "润色" }));
 
     await waitFor(() => {
       expect(onPolish).toHaveBeenCalledWith({
@@ -141,13 +141,13 @@ describe("TicketReplyForm", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Polish" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "润色" })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText("回复内容"), {
       target: { value: "   " },
     });
 
-    expect(screen.getByRole("button", { name: "Polish" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "润色" })).toBeDisabled();
     expect(onPolish).not.toHaveBeenCalled();
   });
 
@@ -167,7 +167,7 @@ describe("TicketReplyForm", () => {
     fireEvent.change(screen.getByLabelText("回复内容"), {
       target: { value: "Still investigating the issue." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Polish" }));
+    fireEvent.click(screen.getByRole("button", { name: "润色" }));
 
     await waitFor(() => {
       expect(onPolish).toHaveBeenCalledWith({
@@ -200,7 +200,7 @@ describe("TicketReplyForm", () => {
     );
 
     expect(screen.getByLabelText("回复内容")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Polish" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "润色" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "提交中..." })).toBeDisabled();
   });
 
@@ -215,7 +215,7 @@ describe("TicketReplyForm", () => {
     );
 
     expect(screen.getByLabelText("回复内容")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Polishing..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "正在润色..." })).toBeDisabled();
     expect(screen.getByRole("button", { name: "提交回复" })).toBeDisabled();
   });
 

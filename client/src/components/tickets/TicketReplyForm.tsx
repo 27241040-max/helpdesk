@@ -96,7 +96,7 @@ export function TicketReplyForm({
           type="button"
           variant="outline"
         >
-          {isPolishing ? "Polishing..." : "Polish"}
+          {isPolishing ? "正在润色..." : "润色"}
         </Button>
 
         <Button disabled={!canSubmit} type="submit">

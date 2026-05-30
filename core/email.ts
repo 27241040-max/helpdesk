@@ -106,6 +106,31 @@ export type TicketDashboardStats = {
   }>;
   totalTickets: number;
 };
+
+export type TicketAgentStep = {
+  agentName: string;
+  completedAt: string;
+  errorMessage: string | null;
+  id: string;
+  inputSummary: string | null;
+  metadata: unknown;
+  outputSummary: string | null;
+  startedAt: string;
+  status: string;
+  stepName: string;
+};
+
+export type TicketAgentRun = {
+  completedAt: string | null;
+  errorMessage: string | null;
+  id: string;
+  metadata: unknown;
+  outcome: string | null;
+  startedAt: string;
+  status: string;
+  steps: TicketAgentStep[];
+  workflow: string;
+};
 export type TicketListMeta = {
   page: number;
   pageSize: number;
@@ -127,6 +152,7 @@ export type TicketListItem = {
 };
 
 export type TicketDetail = {
+  agentRuns?: TicketAgentRun[];
   assignedUser: {
     email: string;
     id: string;

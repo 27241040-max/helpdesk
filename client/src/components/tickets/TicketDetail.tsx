@@ -28,10 +28,10 @@ export function TicketDetail({
 
   return (
     <>
-      <div className="grid min-w-0 gap-4 rounded-[26px] border border-border/75 bg-accent/35 px-5 py-5">
+      <div className="grid min-w-0 gap-4 border-b border-border/70 pb-5">
         <div className="grid min-w-0 gap-1.5">
           <span className="text-[0.72rem] font-medium uppercase tracking-[0.22em] text-primary">
-            Ticket Profile
+            工单信息
           </span>
           <h2 className="break-words text-3xl font-semibold tracking-[-0.05em] text-card-foreground">
             {ticket.subject}
@@ -59,7 +59,7 @@ export function TicketDetail({
         </div>
       </div>
 
-      <div className="grid min-w-0 gap-3 rounded-[24px] border border-border/70 bg-background/64 p-5">
+      <div className="grid min-w-0 gap-3 border-b border-border/70 py-5">
         <span className="text-base font-semibold text-card-foreground">
           正文
         </span>
@@ -79,7 +79,7 @@ export function TicketDetail({
         </p>
 
         {ticket.status === "resolved" && wasAutoResolved ? (
-          <p className="rounded-2xl border border-border/70 bg-accent/45 px-4 py-3 text-sm text-muted-foreground">
+          <p className="border-l-2 border-primary/50 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
             该工单已由知识库自动处理，并已生成系统回复。
           </p>
         ) : null}
@@ -92,7 +92,7 @@ export function TicketDetail({
             variant="outline"
           >
             <SparklesIcon className="size-4" />
-            {isSummarizing ? "Summarizing..." : "Summarize"}
+            {isSummarizing ? "正在生成摘要..." : "生成摘要"}
           </Button>
           <span className="text-xs text-muted-foreground">
             基于正文和回复历史即时重新生成摘要
@@ -104,7 +104,7 @@ export function TicketDetail({
         ) : null}
 
         {summary ? (
-          <div className="grid gap-2 rounded-2xl border border-border/70 bg-card px-4 py-4">
+          <div className="grid gap-2 border-l-2 border-border bg-background/70 px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-medium text-card-foreground">
                 摘要

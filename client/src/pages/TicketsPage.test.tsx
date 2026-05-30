@@ -320,9 +320,9 @@ describe("TicketsPage", () => {
     expect(screen.getByText("当前共 2 个工单，第 1 / 1 页")).toBeVisible();
     expect(screen.getByText("Customer Two")).toBeVisible();
     expect(screen.getByText("customer.two@example.com")).toBeVisible();
-    expect(screen.getAllByText("Open").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Resolved").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Technical").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("待处理").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("已解决").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("技术问题").length).toBeGreaterThan(0);
     expect(screen.getByText("未分类")).toBeVisible();
 
     const rows = screen.getAllByRole("row");

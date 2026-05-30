@@ -42,7 +42,7 @@ function ReplyAuthorIcon({ reply }: { reply: TicketReply }) {
 
 export function TicketReplyThread({ replies }: TicketReplyThreadProps) {
   return (
-    <div className="grid min-w-0 gap-3 rounded-[24px] border border-border/70 bg-background/64 p-5">
+    <div className="grid min-w-0 gap-4 border-b border-border/70 py-5">
       <div className="grid gap-1">
         <span className="text-base font-semibold text-card-foreground">
           回复线程
@@ -53,14 +53,14 @@ export function TicketReplyThread({ replies }: TicketReplyThreadProps) {
       </div>
 
       {replies.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border/80 bg-muted/25 px-4 py-5 text-sm text-muted-foreground">
+        <p className="border-l-2 border-dashed border-border/80 bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
           暂无回复
         </p>
       ) : (
-        <div className="grid min-w-0 gap-3">
+        <div className="grid min-w-0 gap-5">
           {replies.map((reply) => (
             <article
-              className="grid min-w-0 gap-2 rounded-2xl border border-border/70 bg-card px-4 py-4"
+              className="grid min-w-0 gap-2 border-l-2 border-border/80 pl-4"
               key={reply.id}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">

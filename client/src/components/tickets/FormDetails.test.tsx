@@ -20,6 +20,7 @@ const ticketDetail: TicketDetail = {
     name: "Taylor",
   },
   id: 7,
+  agentRuns: [],
   replies: [
     {
       authorLabel: "Agent Smith",
@@ -64,8 +65,8 @@ describe("FormDetails", () => {
       screen.getByText("We have reviewed your refund request and will follow up within one business day."),
     ).toBeVisible();
     expect(screen.getByText("添加回复")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Summarize" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Polish" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "生成摘要" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "润色" })).toBeVisible();
     expect(screen.getByRole("button", { name: "提交回复" })).toBeVisible();
   });
 
@@ -90,9 +91,9 @@ describe("FormDetails", () => {
     expect(screen.getByText("生成摘要失败，请稍后再试。")).toBeVisible();
     expect(screen.getByText("润色回复失败，请稍后再试。")).toBeVisible();
     expect(screen.getByText("提交回复失败，请稍后再试。")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Summarizing..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "正在生成摘要..." })).toBeDisabled();
     expect(screen.getByLabelText("回复内容")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Polishing..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "正在润色..." })).toBeDisabled();
     expect(screen.getByRole("button", { name: "提交中..." })).toBeDisabled();
   });
 

@@ -20,6 +20,13 @@ const {
 
   return {
     prismaMock: {
+      agentRun: {
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      agentStep: {
+        create: vi.fn(),
+      },
       ticket: {
         findUnique: vi.fn(),
         updateMany: vi.fn(),
@@ -77,6 +84,9 @@ const processingTicket = {
 describe("processTicketAutoReply", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prismaMock.agentRun.create.mockResolvedValue({ id: "run-1" });
+    prismaMock.agentRun.update.mockResolvedValue({ id: "run-1" });
+    prismaMock.agentStep.create.mockResolvedValue({ id: "step-1" });
     getAiAgentUserOrThrowMock.mockResolvedValue({
       email: "ai-agent@system.local",
       id: "ai-agent-id",
@@ -134,6 +144,39 @@ describe("processTicketAutoReply", () => {
       externalMessageId: "<ticket-7@example.com>",
       subject: "Invoice download question",
     });
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "KnowledgeAgent",
+        runId: "run-1",
+        status: "completed",
+        stepName: "retrieve_knowledge",
+      }),
+    });
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "SupervisorAgent",
+        runId: "run-1",
+        status: "completed",
+        stepName: "decide_resolution",
+      }),
+    });
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "ActionAgent",
+        runId: "run-1",
+        status: "completed",
+        stepName: "send_reply_and_resolve",
+      }),
+    });
+    expect(prismaMock.agentRun.update).toHaveBeenCalledWith({
+      where: {
+        id: "run-1",
+      },
+      data: expect.objectContaining({
+        outcome: "auto_resolved",
+        status: "completed",
+      }),
+    });
     expect(prismaMock.__tx.ticket.updateMany).toHaveBeenCalledWith({
       where: {
         id: 7,
@@ -189,6 +232,56 @@ describe("processTicketAutoReply", () => {
     });
     expect(prismaMock.__tx.ticketReply.create).not.toHaveBeenCalled();
     expect(sendTicketReplyEmailMock).not.toHaveBeenCalled();
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "HandoffAgent",
+        runId: "run-1",
+        status: "completed",
+        stepName: "route_to_manual",
+      }),
+    });
+  });
+
+  test("requires human approval for refund requests even when knowledge base can answer", async () => {
+    resolveTicketWithKnowledgeBaseMock.mockResolvedValue({
+      category: "refund_request",
+      replyBodyText: "退款申请需要人工审核，我们会尽快跟进。",
+      shouldResolve: true,
+    });
+
+    await processTicketAutoReply(7);
+
+    expect(sendTicketReplyEmailMock).not.toHaveBeenCalled();
+    expect(prismaMock.__tx.ticketReply.create).not.toHaveBeenCalled();
+    expect(prismaMock.__tx.ticket.updateMany).toHaveBeenCalledWith({
+      where: {
+        assignedUserId: "ai-agent-id",
+        id: 7,
+        status: TicketStatus.processing,
+      },
+      data: {
+        assignedUserId: null,
+        status: TicketStatus.open,
+      },
+    });
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "SupervisorAgent",
+        outputSummary: "退款相关工单需要人工审批后才能对客户执行操作。",
+        runId: "run-1",
+        status: "completed",
+        stepName: "require_human_approval",
+      }),
+    });
+    expect(prismaMock.agentRun.update).toHaveBeenCalledWith({
+      where: {
+        id: "run-1",
+      },
+      data: expect.objectContaining({
+        outcome: "manual_queue:approval_required",
+        status: "completed",
+      }),
+    });
   });
 
   test("falls back to open when knowledge base auto reply fails", async () => {
@@ -209,6 +302,14 @@ describe("processTicketAutoReply", () => {
     });
     expect(prismaMock.__tx.ticketReply.create).not.toHaveBeenCalled();
     expect(sendTicketReplyEmailMock).not.toHaveBeenCalled();
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "SupervisorAgent",
+        runId: "run-1",
+        status: "failed",
+        stepName: "handle_resolution_error",
+      }),
+    });
   });
 
   test("keeps a manual assignee when the ticket cannot be auto-resolved", async () => {
@@ -246,6 +347,15 @@ describe("processTicketAutoReply", () => {
 
     expect(resolveTicketWithKnowledgeBaseMock).not.toHaveBeenCalled();
     expect(sendTicketReplyEmailMock).not.toHaveBeenCalled();
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "KnowledgeAgent",
+        outputSummary: "没有命中足够相关的知识库内容。",
+        runId: "run-1",
+        status: "skipped",
+        stepName: "retrieve_knowledge",
+      }),
+    });
     expect(prismaMock.__tx.ticket.updateMany).toHaveBeenCalledWith({
       where: {
         assignedUserId: "ai-agent-id",
@@ -266,6 +376,7 @@ describe("processTicketAutoReply", () => {
 
     expect(prismaMock.ticket.findUnique).not.toHaveBeenCalled();
     expect(resolveTicketWithKnowledgeBaseMock).not.toHaveBeenCalled();
+    expect(prismaMock.agentRun.create).not.toHaveBeenCalled();
   });
 
   test("falls back to open when outbound delivery fails", async () => {

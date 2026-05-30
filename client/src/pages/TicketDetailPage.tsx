@@ -233,7 +233,7 @@ export function TicketDetailPage() {
           <p className="text-sm text-muted-foreground">{getTicketDetailErrorMessage(error)}</p>
         </article>
       ) : data ? (
-        <article className="grid gap-6 rounded-[32px] border border-border/80 bg-card/94 p-4 shadow-[0_20px_55px_rgba(62,48,34,0.08)] md:p-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-9">
+        <article className="grid gap-8 rounded-2xl border border-border/70 bg-card/95 p-5 shadow-[0_18px_46px_rgba(62,48,34,0.07)] md:p-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-8">
           <FormDetails
             data={data}
             onPolish={ticketReplyPolishMutation.mutateAsync}

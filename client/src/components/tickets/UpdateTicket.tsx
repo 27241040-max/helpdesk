@@ -5,6 +5,7 @@ import {
 } from "core/email";
 import type { ReactNode } from "react";
 
+import { TicketAgentTrace } from "@/components/tickets/TicketAgentTrace";
 import {
   getTicketCategoryLabel,
   getTicketStatusLabel,
@@ -46,8 +47,8 @@ function DetailItem({
   value: ReactNode;
 }) {
   return (
-    <div className="grid min-w-0 gap-2 rounded-[22px] border border-border/70 bg-background/72 p-4">
-      <span className="text-[0.72rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
+    <div className="grid min-w-0 gap-2 border-b border-border/65 py-3 last:border-b-0">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <div className="min-w-0 text-sm text-card-foreground">{value}</div>
     </div>
   );
@@ -69,7 +70,7 @@ export function UpdateTicket({
 }: UpdateTicketProps) {
   return (
     <>
-      <aside className="grid min-w-0 gap-4 lg:pt-1">
+      <aside className="grid min-w-0 gap-4 rounded-xl bg-background/55 px-4 py-4 lg:sticky lg:top-5">
         <DetailItem
           label="当前状态"
           value={getTicketStatusLabel(ticket.status)}
@@ -146,6 +147,7 @@ export function UpdateTicket({
             </div>
           }
         />
+        <TicketAgentTrace runs={ticket.agentRuns ?? []} />
       </aside>
 
       {updateErrorMessage ? (
