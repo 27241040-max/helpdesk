@@ -30,6 +30,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        "core/email": path.resolve(__dirname, "../core/email.ts"),
+        "core/knowledge-base": path.resolve(__dirname, "../core/knowledge-base.ts"),
+        "core/users": path.resolve(__dirname, "../core/users.ts"),
+        core: path.resolve(__dirname, "../core/index.ts"),
       },
     },
     build: {

@@ -119,6 +119,7 @@ async function registerApplicationRoutes() {
     { ensureAiAgentUser },
     { agentsRouter },
     { inboundEmailRouter },
+    { knowledgeBaseRouter },
     { ticketsRouter },
     { requireAuth },
     { usersRouter },
@@ -129,6 +130,7 @@ async function registerApplicationRoutes() {
     import("./lib/ai-agent"),
     import("./routes/agents"),
     import("./routes/inbound-email"),
+    import("./routes/knowledge-base"),
     import("./routes/tickets"),
     import("./middleware/require-auth"),
     import("./routes/users"),
@@ -145,6 +147,7 @@ async function registerApplicationRoutes() {
 
   app.use("/api/agents", agentsRouter);
   app.use("/api/inbound/email", inboundEmailRouter);
+  app.use("/api/knowledge-base", knowledgeBaseRouter);
   app.use("/api/webhooks/inbound-email", inboundEmailRouter);
   app.use("/api/tickets", ticketsRouter);
   app.use("/api/users", usersRouter);

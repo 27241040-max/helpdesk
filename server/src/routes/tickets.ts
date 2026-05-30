@@ -69,6 +69,35 @@ const ticketDetailSelect = {
       },
     },
   },
+  agentRuns: {
+    orderBy: [{ startedAt: "desc" }, { id: "desc" }],
+    take: 5,
+    select: {
+      id: true,
+      workflow: true,
+      status: true,
+      outcome: true,
+      errorMessage: true,
+      metadata: true,
+      startedAt: true,
+      completedAt: true,
+      steps: {
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          agentName: true,
+          stepName: true,
+          status: true,
+          inputSummary: true,
+          outputSummary: true,
+          metadata: true,
+          errorMessage: true,
+          startedAt: true,
+          completedAt: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.TicketSelect;
 
 function getTicketOrderBy(

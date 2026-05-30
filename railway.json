@@ -5,9 +5,7 @@
     "dockerfilePath": "Dockerfile.backend"
   },
   "deploy": {
-    "preDeployCommand": [
-      "npm run prisma:migrate:deploy --workspace server"
-    ],
+    "preDeployCommand": "npm run railway:predeploy",
     "startCommand": "npm run start --workspace server",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 300

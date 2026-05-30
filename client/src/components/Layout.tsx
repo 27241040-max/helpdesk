@@ -55,12 +55,20 @@ export function Layout({ displayName, isAdmin }: LayoutProps) {
                 工单
               </NavLink>
               {isAdmin ? (
-                <NavLink
-                  className={({ isActive }) => getAppNavLinkClass(isActive)}
-                  to="/users"
-                >
-                  用户
-                </NavLink>
+                <>
+                  <NavLink
+                    className={({ isActive }) => getAppNavLinkClass(isActive)}
+                    to="/knowledge-base"
+                  >
+                    知识库
+                  </NavLink>
+                  <NavLink
+                    className={({ isActive }) => getAppNavLinkClass(isActive)}
+                    to="/users"
+                  >
+                    用户
+                  </NavLink>
+                </>
               ) : null}
             </nav>
           </div>

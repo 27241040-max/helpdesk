@@ -44,40 +44,40 @@ export function getTicketCategoryLabel(category: TicketCategory | null) {
 
   switch (category) {
     case TicketCategory.general:
-      return "General";
+      return "一般咨询";
     case TicketCategory.technical:
-      return "Technical";
+      return "技术问题";
     case TicketCategory.refundRequest:
-      return "Refund Request";
+      return "退款请求";
   }
 }
 
 export const ticketCategoryOptions: Array<{ label: string; value: TicketCategory | null }> = [
   { label: "未分类", value: null },
-  { label: "General", value: TicketCategory.general },
-  { label: "Technical", value: TicketCategory.technical },
-  { label: "Refund Request", value: TicketCategory.refundRequest },
+  { label: "一般咨询", value: TicketCategory.general },
+  { label: "技术问题", value: TicketCategory.technical },
+  { label: "退款请求", value: TicketCategory.refundRequest },
 ];
 
 export function getTicketStatusLabel(status: TicketStatus) {
   switch (status) {
     case TicketStatus.new:
-      return "New";
+      return "新工单";
     case TicketStatus.open:
-      return "Open";
+      return "待处理";
     case TicketStatus.processing:
-      return "Processing";
+      return "处理中";
     case TicketStatus.resolved:
-      return "Resolved";
+      return "已解决";
     case TicketStatus.closed:
-      return "Closed";
+      return "已关闭";
   }
 }
 
 export const ticketStatusOptions: Array<{ label: string; value: TicketStatus }> = [
-  { label: "Open", value: TicketStatus.open },
-  { label: "Resolved", value: TicketStatus.resolved },
-  { label: "Closed", value: TicketStatus.closed },
+  { label: "待处理", value: TicketStatus.open },
+  { label: "已解决", value: TicketStatus.resolved },
+  { label: "已关闭", value: TicketStatus.closed },
 ];
 
 export function getTicketStatusClassName(status: TicketStatus) {

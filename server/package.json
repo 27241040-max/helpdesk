@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
+    "knowledge-base:import": "tsx scripts/import-knowledge-base.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

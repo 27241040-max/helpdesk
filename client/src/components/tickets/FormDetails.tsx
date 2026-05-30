@@ -48,7 +48,7 @@ export function FormDetails({
       />
       <TicketReplyThread replies={data.replies ?? []} />
 
-      <div className="grid gap-4 rounded-[24px] border border-border/70 bg-background/62 p-5">
+      <div className="grid gap-4 pt-5">
         <div className="grid gap-1">
           <span className="text-base font-semibold text-card-foreground">添加回复</span>
           <span className="text-sm text-muted-foreground">回复会记录在线程中，不会自动修改工单状态。</span>

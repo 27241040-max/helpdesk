@@ -2,6 +2,13 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const { prismaMock, classifyTicketMock } = vi.hoisted(() => ({
   prismaMock: {
+    agentRun: {
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    agentStep: {
+      create: vi.fn(),
+    },
     ticket: {
       findUnique: vi.fn(),
       updateMany: vi.fn(),
@@ -36,6 +43,9 @@ const uncategorizedTicket = {
 describe("processTicketAutoClassification", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    prismaMock.agentRun.create.mockResolvedValue({ id: "run-1" });
+    prismaMock.agentRun.update.mockResolvedValue({ id: "run-1" });
+    prismaMock.agentStep.create.mockResolvedValue({ id: "step-1" });
   });
 
   test("classifies uncategorized tickets and persists the result", async () => {
@@ -54,6 +64,24 @@ describe("processTicketAutoClassification", () => {
       data: {
         category: TicketCategory.technical,
       },
+    });
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "TriageAgent",
+        outputSummary: "工单已分类为 technical。",
+        runId: "run-1",
+        status: "completed",
+        stepName: "classify_ticket",
+      }),
+    });
+    expect(prismaMock.agentRun.update).toHaveBeenCalledWith({
+      where: {
+        id: "run-1",
+      },
+      data: expect.objectContaining({
+        outcome: "classified:technical",
+        status: "completed",
+      }),
     });
   });
 
@@ -85,6 +113,13 @@ describe("processTicketAutoClassification", () => {
       data: {
         status: TicketStatus.open,
       },
+    });
+    expect(prismaMock.agentStep.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        agentName: "TriageAgent",
+        status: "failed",
+        stepName: "classify_ticket",
+      }),
     });
 
     errorSpy.mockRestore();

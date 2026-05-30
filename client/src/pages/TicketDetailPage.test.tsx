@@ -109,16 +109,16 @@ describe("TicketDetailPage", () => {
     expect(screen.getByText(/客户:/)).toBeVisible();
     expect(screen.getByText("Taylor (taylor@example.com)")).toBeVisible();
     expect(screen.getByRole("combobox", { name: "指派给" })).toHaveTextContent("Agent Smith");
-    expect(screen.getByRole("combobox", { name: "状态" })).toHaveTextContent("Open");
-    expect(screen.getByRole("combobox", { name: "类别" })).toHaveTextContent("Refund Request");
+    expect(screen.getByRole("combobox", { name: "状态" })).toHaveTextContent("待处理");
+    expect(screen.getByRole("combobox", { name: "类别" })).toHaveTextContent("退款请求");
     expect(screen.getByText("正文")).toBeVisible();
     expect(screen.getByText("来自 Taylor")).toBeVisible();
     expect(screen.getByText("回复线程")).toBeVisible();
     expect(
       screen.getByText("We have reviewed your refund request and will follow up within one business day."),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Summarize" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Polish" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "生成摘要" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "润色" })).toBeVisible();
     expect(screen.getByRole("button", { name: "提交回复" })).toBeVisible();
     expect(screen.getByRole("link", { name: "返回工单列表" })).toHaveAttribute("href", "/tickets");
     expect(mockedApiClient.get).toHaveBeenCalledWith("/api/tickets/7");
@@ -239,6 +239,61 @@ describe("TicketDetailPage", () => {
     expect(screen.getByRole("combobox", { name: "指派给" })).toHaveTextContent("AI agent");
   });
 
+  test("renders agent trace in the side panel", async () => {
+    mockedApiClient.get.mockImplementation(async (url) => {
+      if (url === "/api/tickets/7") {
+        return {
+          data: {
+            ...ticketDetail,
+            agentRuns: [
+              {
+                completedAt: "2026-04-14T08:02:00.000Z",
+                errorMessage: null,
+                id: "run-1",
+                metadata: null,
+                outcome: "auto_resolved",
+                startedAt: "2026-04-14T08:00:00.000Z",
+                status: "completed",
+                workflow: "ticket-auto-resolution",
+                steps: [
+                  {
+                    agentName: "KnowledgeAgent",
+                    completedAt: "2026-04-14T08:01:00.000Z",
+                    errorMessage: null,
+                    id: "step-1",
+                    inputSummary: "Subject: Refund request follow-up",
+                    metadata: null,
+                    outputSummary: "Retrieved 3 relevant knowledge base source(s).",
+                    startedAt: "2026-04-14T08:01:00.000Z",
+                    status: "completed",
+                    stepName: "retrieve_knowledge",
+                  },
+                ],
+              },
+            ],
+          } satisfies TicketDetail,
+        };
+      }
+
+      if (url === "/api/agents") {
+        return { data: { agents } };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
+
+    renderTicketDetailPage();
+
+    await screen.findByText("Refund request follow-up");
+
+    expect(screen.getByText("Agent 轨迹")).toBeVisible();
+    expect(screen.getByText("自动处理")).toBeVisible();
+    expect(screen.getByText(/已自动解决/)).toBeVisible();
+    expect(screen.getByText("知识库 Agent")).toBeVisible();
+    expect(screen.getByText("检索知识库")).toBeVisible();
+    expect(screen.getByText("命中 3 条相关知识库内容。")).toBeVisible();
+  });
+
   test("assigns the ticket to a different agent", async () => {
     mockedApiClient.get.mockImplementation(async (url) => {
       if (url === "/api/tickets/7") {
@@ -299,7 +354,7 @@ describe("TicketDetailPage", () => {
 
     fireEvent.click(screen.getByRole("combobox", { name: "状态" }));
     const listbox = await screen.findByRole("listbox");
-    fireEvent.click(within(listbox).getByText("Closed"));
+    fireEvent.click(within(listbox).getByText("已关闭"));
 
     await waitFor(() => {
       expect(mockedApiClient.patch).toHaveBeenCalledWith("/api/tickets/7", {
@@ -307,7 +362,7 @@ describe("TicketDetailPage", () => {
         status: TicketStatus.closed,
       });
     });
-    expect(screen.getByRole("combobox", { name: "状态" })).toHaveTextContent("Closed");
+    expect(screen.getByRole("combobox", { name: "状态" })).toHaveTextContent("已关闭");
   });
 
   test("updates ticket category", async () => {
@@ -335,7 +390,7 @@ describe("TicketDetailPage", () => {
 
     fireEvent.click(screen.getByRole("combobox", { name: "类别" }));
     const listbox = await screen.findByRole("listbox");
-    fireEvent.click(within(listbox).getByText("Technical"));
+    fireEvent.click(within(listbox).getByText("技术问题"));
 
     await waitFor(() => {
       expect(mockedApiClient.patch).toHaveBeenCalledWith("/api/tickets/7", {
@@ -343,7 +398,7 @@ describe("TicketDetailPage", () => {
         status: TicketStatus.open,
       });
     });
-    expect(screen.getByRole("combobox", { name: "类别" })).toHaveTextContent("Technical");
+    expect(screen.getByRole("combobox", { name: "类别" })).toHaveTextContent("技术问题");
   });
 
   test("submits a new reply and clears the form", async () => {
@@ -438,7 +493,7 @@ describe("TicketDetailPage", () => {
     fireEvent.change(screen.getByLabelText("回复内容"), {
       target: { value: "looking into this now" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Polish" }));
+    fireEvent.click(screen.getByRole("button", { name: "润色" }));
 
     await waitFor(() => {
       expect(mockedApiClient.post).toHaveBeenCalledWith("/api/tickets/7/replies/polish", {
@@ -481,14 +536,14 @@ describe("TicketDetailPage", () => {
 
     await screen.findByText("Refund request follow-up");
 
-    fireEvent.click(screen.getByRole("button", { name: "Summarize" }));
+    fireEvent.click(screen.getByRole("button", { name: "生成摘要" }));
 
     await waitFor(() => {
       expect(mockedApiClient.post).toHaveBeenCalledWith("/api/tickets/7/summary");
     });
     expect(await screen.findByText(hasTextContent(firstSummary.bodyText))).toBeVisible();
 
-    fireEvent.click(screen.getByRole("button", { name: "Summarize" }));
+    fireEvent.click(screen.getByRole("button", { name: "生成摘要" }));
 
     await waitFor(() => {
       expect(mockedApiClient.post).toHaveBeenNthCalledWith(2, "/api/tickets/7/summary");
@@ -624,7 +679,7 @@ describe("TicketDetailPage", () => {
     fireEvent.change(screen.getByLabelText("回复内容"), {
       target: { value: "I am still working on your ticket." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Polish" }));
+    fireEvent.click(screen.getByRole("button", { name: "润色" }));
 
     expect(await screen.findByText("润色回复失败，请稍后再试。")).toBeVisible();
     expect(screen.getByLabelText("回复内容")).toHaveValue("I am still working on your ticket.");
